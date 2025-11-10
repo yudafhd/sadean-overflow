@@ -1,4 +1,5 @@
 "use client"
+
 import React, { useMemo, useState } from 'react'
 import { AppProvider, useApp } from './state'
 import type { AdditionalCost, Ingredient, Product, ProductRequirement } from './types'
@@ -48,7 +49,7 @@ function CreateProductForm() {
             {products.map((p) => (
               <li key={p.id} className="flex items-center justify-between border rounded px-3 py-2">
                 <span>{p.name} — {p.type} — Margin: {p.defaultMarginPercent}%</span>
-                <code className="text-gray-400">{p.id}</code>
+                {/* <code className="text-gray-400">{p.id}</code> */}
               </li>
             ))}
           </ul>
@@ -59,14 +60,26 @@ function CreateProductForm() {
 }
 
 function AddIngredientForm() {
-  const { ingredients, addIngredient } = useApp()
+  const { ingredients, addIngredient, updateIngredient } = useApp()
   const [form, setForm] = useState<Omit<Ingredient, 'id'>>({ name: '', unit: 'kg', pricePerUnit: 0 })
+  const [totalUnitQty, setTotalUnitQty] = useState<number>(0)
+  const [totalUnitPrice, setTotalUnitPrice] = useState<number>(0)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [edit, setEdit] = useState<{ name: string; unit: Ingredient['unit']; pricePerUnit: number } | null>(null)
+
+  const computedPricePerUnit = useMemo(() => {
+    if (totalUnitQty > 0 && totalUnitPrice > 0) return totalUnitPrice / totalUnitQty
+    return 0
+  }, [totalUnitQty, totalUnitPrice])
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) return
-    addIngredient({ ...form, pricePerUnit: Number(form.pricePerUnit || 0) })
+    const pricePerUnit = computedPricePerUnit > 0 ? computedPricePerUnit : Number(form.pricePerUnit || 0)
+    addIngredient({ name: form.name, unit: form.unit, pricePerUnit })
     setForm({ name: '', unit: 'kg', pricePerUnit: 0 })
+    setTotalUnitQty(0)
+    setTotalUnitPrice(0)
   }
 
   return (
@@ -86,8 +99,31 @@ function AddIngredientForm() {
           </select>
         </div>
         <div>
-          <label className="block text-sm mb-1">Harga per Unit</label>
-          <input type="number" value={form.pricePerUnit} onChange={(e) => setForm((s) => ({ ...s, pricePerUnit: Number(e.target.value) }))} className="w-full border rounded px-3 py-2" placeholder="contoh: 15000" />
+          <label className="block text-sm mb-1">Total Satuan</label>
+          <input
+            type="number"
+            value={totalUnitQty}
+            onChange={(e) => setTotalUnitQty(Number(e.target.value))}
+            className="w-full border rounded px-3 py-2"
+            placeholder="contoh: 100 (gr, pcs, dll)"
+          />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Harga Total Satuan</label>
+          <input
+            type="number"
+            value={totalUnitPrice}
+            onChange={(e) => setTotalUnitPrice(Number(e.target.value))}
+            className="w-full border rounded px-3 py-2"
+            placeholder="contoh: 10000"
+          />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Harga per Unit (otomatis)</label>
+          <div className="w-full border rounded px-3 py-2 bg-gray-50">
+            {computedPricePerUnit > 0 ? Number(computedPricePerUnit.toFixed(6)).toLocaleString('id-ID') : '—'}
+          </div>
+          <p className="text-xs text-gray-500 mt-1">Dihitung dari Total Satuan dan Harga Total Satuan.</p>
         </div>
         <button type="submit" className="bg-emerald-600 text-white rounded px-4 py-2 h-10">Tambah Bahan</button>
       </form>
@@ -96,12 +132,87 @@ function AddIngredientForm() {
         <div className="mt-4">
           <h4 className="font-medium mb-2">Daftar Bahan</h4>
           <ul className="space-y-1 text-sm">
-            {ingredients.map((i) => (
-              <li key={i.id} className="flex items-center justify-between border rounded px-3 py-2">
-                <span>{i.name} — Unit: {i.unit} — Harga/unit: {i.pricePerUnit.toLocaleString('id-ID')}</span>
-                <code className="text-gray-400">{i.id}</code>
-              </li>
-            ))}
+            {ingredients.map((i) => {
+              const isEditing = editingId === i.id
+              return (
+                <li key={i.id} className="border rounded px-3 py-2">
+                  {!isEditing ? (
+                    <div className="flex items-center justify-between gap-3">
+                      <span>
+                        {i.name} — Unit: {i.unit} — Harga/unit: {i.pricePerUnit.toLocaleString('id-ID')}
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          className="text-blue-600 hover:underline"
+                          onClick={() => {
+                            setEditingId(i.id)
+                            setEdit({ name: i.name, unit: i.unit, pricePerUnit: i.pricePerUnit })
+                          }}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                      <div>
+                        <label className="block text-sm mb-1">Nama</label>
+                        <input
+                          value={edit?.name || ''}
+                          onChange={(e) => setEdit((s) => (s ? { ...s, name: e.target.value } : s))}
+                          className="w-full border rounded px-3 py-2"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-1">Satuan</label>
+                        <select
+                          value={edit?.unit || 'kg'}
+                          onChange={(e) => setEdit((s) => (s ? { ...s, unit: e.target.value as any } : s))}
+                          className="w-full border rounded px-3 py-2"
+                        >
+                          <option value="gr">gr</option>
+                          <option value="kg">kg</option>
+                          <option value="pcs">pcs</option>
+                          <option value="liter">liter</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-1">Harga per Unit</label>
+                        <input
+                          type="number"
+                          value={edit?.pricePerUnit ?? 0}
+                          onChange={(e) => setEdit((s) => (s ? { ...s, pricePerUnit: Number(e.target.value) } : s))}
+                          className="w-full border rounded px-3 py-2"
+                          placeholder="contoh: 150"
+                        />
+                      </div>
+                      <div className="flex items-end gap-2">
+                        <button
+                          className="bg-blue-600 text-white rounded px-4 py-2 h-10"
+                          onClick={() => {
+                            if (!edit) return
+                            updateIngredient(i.id, { name: edit.name, unit: edit.unit, pricePerUnit: Number(edit.pricePerUnit || 0) })
+                            setEditingId(null)
+                            setEdit(null)
+                          }}
+                        >
+                          Simpan
+                        </button>
+                        <button
+                          className="bg-gray-200 text-gray-800 rounded px-4 py-2 h-10"
+                          onClick={() => {
+                            setEditingId(null)
+                            setEdit(null)
+                          }}
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         </div>
       )}
@@ -285,7 +396,7 @@ function Calculator() {
             <thead>
               <tr className="bg-gray-50">
                 <th className="p-2 border">Nama</th>
-                <th className="p-2 border">Jumlah (total batch)</th>
+                <th className="p-2 border">Jumlah</th>
                 <th className="p-2 border">Aksi</th>
               </tr>
             </thead>

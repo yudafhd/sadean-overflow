@@ -5,6 +5,7 @@ import type { AppState, Product, Ingredient, ProductRequirement } from './types'
 type AppContextType = AppState & {
   addProduct: (p: Omit<Product, 'id'>) => void
   addIngredient: (i: Omit<Ingredient, 'id'>) => void
+  updateIngredient: (id: string, patch: Partial<Omit<Ingredient, 'id'>>) => void
   upsertRequirementRows: (productId: string, rows: Omit<ProductRequirement, 'productId'>[]) => void
   removeRequirementRow: (productId: string, ingredientId: string) => void
 }
@@ -26,6 +27,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setIngredients((prev) => [...prev, { ...i, id: genId('ing') }])
   }
 
+  const updateIngredient: AppContextType['updateIngredient'] = (id, patch) => {
+    setIngredients((prev) => prev.map((ing) => (ing.id === id ? { ...ing, ...patch } : ing)))
+  }
+
   const upsertRequirementRows: AppContextType['upsertRequirementRows'] = (productId, rows) => {
     setRequirements((prev) => {
       const withoutProduct = prev.filter((r) => r.productId !== productId)
@@ -39,7 +44,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
 
   const value = useMemo(
-    () => ({ products, ingredients, requirements, addProduct, addIngredient, upsertRequirementRows, removeRequirementRow }),
+    () => ({ products, ingredients, requirements, addProduct, addIngredient, updateIngredient, upsertRequirementRows, removeRequirementRow }),
     [products, ingredients, requirements]
   )
 
