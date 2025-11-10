@@ -1,6 +1,7 @@
 "use client"
-import React, { createContext, useContext, useMemo, useState } from 'react'
-import type { AppState, Product, Ingredient, ProductRequirement } from './types'
+import React, { createContext, useContext, useMemo } from 'react'
+import type { AppState, Product, Ingredient, ProductRequirement } from '@/types'
+import { useLocalStorageState } from '@/hooks/useLocalStorage'
 
 type AppContextType = AppState & {
   addProduct: (p: Omit<Product, 'id'>) => void
@@ -15,9 +16,9 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 const genId = (prefix: string) => `${prefix}_${Math.random().toString(36).slice(2, 8)}_${Date.now().toString(36)}`
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [products, setProducts] = useState<Product[]>([])
-  const [ingredients, setIngredients] = useState<Ingredient[]>([])
-  const [requirements, setRequirements] = useState<ProductRequirement[]>([])
+  const [products, setProducts] = useLocalStorageState<Product[]>('so_products', [])
+  const [ingredients, setIngredients] = useLocalStorageState<Ingredient[]>('so_ingredients', [])
+  const [requirements, setRequirements] = useLocalStorageState<ProductRequirement[]>('so_requirements', [])
 
   const addProduct: AppContextType['addProduct'] = (p) => {
     setProducts((prev) => [...prev, { ...p, id: genId('prd') }])

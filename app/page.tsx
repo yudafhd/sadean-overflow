@@ -1,14 +1,20 @@
 "use client"
 
 import React, { useMemo, useState } from 'react'
-import { AppProvider, useApp } from './state'
-import type { AdditionalCost, Ingredient, Product, ProductRequirement } from './types'
+import { TbCalculator } from 'react-icons/tb'
+import { AppProvider, useApp } from '@/state'
+import type { AdditionalCost, Ingredient, Product, ProductRequirement } from '@/types'
+import { TopNav } from '@/folderly/components/Nav'
+import { Button } from '@/folderly/components/Button'
+import { TextInput, Select } from '@/folderly/components/Input'
+import { NumericInput } from '@/folderly/components/NumericInput'
+import { useLocalStorageState } from '@/hooks/useLocalStorage'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-8">
-      <h2 className="text-xl font-semibold mb-3">{title}</h2>
-      <div className="p-4 rounded-lg border border-gray-200 bg-white">{children}</div>
+      <div className="mb-3"><span className="folderly-oval text-lg font-bold">{title}</span></div>
+      <div className="folderly-card p-4">{children}</div>
     </section>
   )
 }
@@ -29,17 +35,17 @@ function CreateProductForm() {
       <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
         <div>
           <label className="block text-sm mb-1">Nama Produk</label>
-          <input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} className="w-full border rounded px-3 py-2" placeholder="Roti Cokelat" />
+          <TextInput value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} placeholder="Roti Cokelat" />
         </div>
         <div>
           <label className="block text-sm mb-1">Tipe</label>
-          <input value={form.type} onChange={(e) => setForm((s) => ({ ...s, type: e.target.value }))} className="w-full border rounded px-3 py-2" placeholder="frozen / offline / online" />
+          <TextInput value={form.type} onChange={(e) => setForm((s) => ({ ...s, type: e.target.value }))} placeholder="frozen / offline / online" />
         </div>
         <div>
           <label className="block text-sm mb-1">Margin Default (%)</label>
-          <input type="number" value={form.defaultMarginPercent} onChange={(e) => setForm((s) => ({ ...s, defaultMarginPercent: Number(e.target.value) }))} className="w-full border rounded px-3 py-2" />
+          <NumericInput value={form.defaultMarginPercent} onChange={(v) => setForm((s) => ({ ...s, defaultMarginPercent: Number(v) }))} allowDecimals />
         </div>
-        <button type="submit" className="bg-blue-600 text-white rounded px-4 py-2 h-10">Tambah Produk</button>
+        <Button type="submit">Tambah Produk</Button>
       </form>
 
       {products.length > 0 && (
@@ -87,35 +93,32 @@ function AddIngredientForm() {
       <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
         <div>
           <label className="block text-sm mb-1">Nama Bahan</label>
-          <input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} className="w-full border rounded px-3 py-2" placeholder="Tepung Terigu" />
+          <TextInput value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} placeholder="Tepung Terigu" />
         </div>
         <div>
           <label className="block text-sm mb-1">Satuan</label>
-          <select value={form.unit} onChange={(e) => setForm((s) => ({ ...s, unit: e.target.value as any }))} className="w-full border rounded px-3 py-2">
+          <Select value={form.unit} onChange={(e) => setForm((s) => ({ ...s, unit: (e.target as HTMLSelectElement).value as any }))}>
             <option value="gr">gr</option>
             <option value="kg">kg</option>
             <option value="pcs">pcs</option>
             <option value="liter">liter</option>
-          </select>
+          </Select>
         </div>
         <div>
           <label className="block text-sm mb-1">Total Satuan</label>
-          <input
-            type="number"
+          <NumericInput
             value={totalUnitQty}
-            onChange={(e) => setTotalUnitQty(Number(e.target.value))}
-            className="w-full border rounded px-3 py-2"
+            onChange={setTotalUnitQty}
+            allowDecimals
             placeholder="contoh: 100 (gr, pcs, dll)"
           />
         </div>
         <div>
           <label className="block text-sm mb-1">Harga Total Satuan</label>
-          <input
-            type="number"
+          <NumericInput
             value={totalUnitPrice}
-            onChange={(e) => setTotalUnitPrice(Number(e.target.value))}
-            className="w-full border rounded px-3 py-2"
-            placeholder="contoh: 10000"
+            onChange={setTotalUnitPrice}
+            placeholder="contoh: 10.000"
           />
         </div>
         <div>
@@ -125,7 +128,7 @@ function AddIngredientForm() {
           </div>
           <p className="text-xs text-gray-500 mt-1">Dihitung dari Total Satuan dan Harga Total Satuan.</p>
         </div>
-        <button type="submit" className="bg-emerald-600 text-white rounded px-4 py-2 h-10">Tambah Bahan</button>
+        <Button type="submit" variant="secondary">Tambah Bahan</Button>
       </form>
 
       {ingredients.length > 0 && (
@@ -142,53 +145,49 @@ function AddIngredientForm() {
                         {i.name} — Unit: {i.unit} — Harga/unit: {i.pricePerUnit.toLocaleString('id-ID')}
                       </span>
                       <div className="flex items-center gap-3">
-                        <button
-                          className="text-blue-600 hover:underline"
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => {
                             setEditingId(i.id)
                             setEdit({ name: i.name, unit: i.unit, pricePerUnit: i.pricePerUnit })
                           }}
                         >
                           Edit
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                       <div>
                         <label className="block text-sm mb-1">Nama</label>
-                        <input
+                        <TextInput
                           value={edit?.name || ''}
                           onChange={(e) => setEdit((s) => (s ? { ...s, name: e.target.value } : s))}
-                          className="w-full border rounded px-3 py-2"
                         />
                       </div>
                       <div>
                         <label className="block text-sm mb-1">Satuan</label>
-                        <select
+                        <Select
                           value={edit?.unit || 'kg'}
-                          onChange={(e) => setEdit((s) => (s ? { ...s, unit: e.target.value as any } : s))}
-                          className="w-full border rounded px-3 py-2"
+                          onChange={(e) => setEdit((s) => (s ? { ...s, unit: (e.target as HTMLSelectElement).value as any } : s))}
                         >
                           <option value="gr">gr</option>
                           <option value="kg">kg</option>
                           <option value="pcs">pcs</option>
                           <option value="liter">liter</option>
-                        </select>
+                        </Select>
                       </div>
                       <div>
                         <label className="block text-sm mb-1">Harga per Unit</label>
-                        <input
-                          type="number"
+                        <NumericInput
                           value={edit?.pricePerUnit ?? 0}
-                          onChange={(e) => setEdit((s) => (s ? { ...s, pricePerUnit: Number(e.target.value) } : s))}
-                          className="w-full border rounded px-3 py-2"
+                          onChange={(val) => setEdit((s) => (s ? { ...s, pricePerUnit: val } : s))}
                           placeholder="contoh: 150"
                         />
                       </div>
                       <div className="flex items-end gap-2">
-                        <button
-                          className="bg-blue-600 text-white rounded px-4 py-2 h-10"
+                        <Button
                           onClick={() => {
                             if (!edit) return
                             updateIngredient(i.id, { name: edit.name, unit: edit.unit, pricePerUnit: Number(edit.pricePerUnit || 0) })
@@ -197,16 +196,16 @@ function AddIngredientForm() {
                           }}
                         >
                           Simpan
-                        </button>
-                        <button
-                          className="bg-gray-200 text-gray-800 rounded px-4 py-2 h-10"
+                        </Button>
+                        <Button
+                          variant="ghost"
                           onClick={() => {
                             setEditingId(null)
                             setEdit(null)
                           }}
                         >
                           Batal
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -222,7 +221,7 @@ function AddIngredientForm() {
 
 function RecipeEditor() {
   const { products, ingredients, requirements, upsertRequirementRows, removeRequirementRow } = useApp()
-  const [selectedProductId, setSelectedProductId] = useState<string>('')
+  const [selectedProductId, setSelectedProductId] = useLocalStorageState<string>('so_recipe_selected_product', '')
 
   const rowsForSelected = useMemo(() => requirements.filter((r) => r.productId === selectedProductId), [requirements, selectedProductId])
   const [localRows, setLocalRows] = useState<Omit<ProductRequirement, 'productId'>[]>([])
@@ -260,15 +259,15 @@ function RecipeEditor() {
       <div className="flex gap-3 items-end">
         <div className="flex-1">
           <label className="block text-sm mb-1">Pilih Produk</label>
-          <select value={selectedProductId} onChange={(e) => onSelectProduct(e.target.value)} className="w-full border rounded px-3 py-2">
+          <Select value={selectedProductId} onChange={(e) => onSelectProduct((e.target as HTMLSelectElement).value)}>
             <option value="">-- pilih --</option>
             {products.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
-          </select>
+          </Select>
         </div>
-        <button onClick={addRow} className="bg-gray-800 text-white rounded px-4 py-2 h-10" disabled={!selectedProductId}>Tambah Baris</button>
-        <button onClick={save} className="bg-blue-600 text-white rounded px-4 py-2 h-10" disabled={!selectedProductId}>Simpan Resep</button>
+        <Button onClick={addRow} disabled={!selectedProductId}>Tambah Baris</Button>
+        <Button onClick={save} disabled={!selectedProductId}>Simpan Resep</Button>
       </div>
 
       <div className="overflow-x-auto">
@@ -289,20 +288,20 @@ function RecipeEditor() {
             {localRows.map((row, idx) => (
               <tr key={idx}>
                 <td className="p-2 border">
-                  <select value={row.ingredientId} onChange={(e) => updateRow(idx, { ingredientId: e.target.value })} className="w-full border rounded px-2 py-1">
+                  <Select value={row.ingredientId} onChange={(e) => updateRow(idx, { ingredientId: (e.target as HTMLSelectElement).value })}>
                     <option value="">-- pilih bahan --</option>
                     {ingredients.map((i) => (
                       <option key={i.id} value={i.id}>{i.name}</option>
                     ))}
-                  </select>
+                  </Select>
                 </td>
                 <td className="p-2 border">
                   <div className="flex items-center gap-2">
-                    <input
-                      type="number"
+                    <NumericInput
                       value={row.qtyPerProduct ?? 0}
-                      onChange={(e) => updateRow(idx, { qtyPerProduct: Number(e.target.value) })}
-                      className="w-full border rounded px-2 py-1"
+                      onChange={(val) => updateRow(idx, { qtyPerProduct: val })}
+                      allowDecimals
+                      className="h-9 px-2"
                     />
                     <span className="text-xs text-gray-600">{ingredients.find((i) => i.id === row.ingredientId)?.unit || '-'}</span>
                   </div>
@@ -330,10 +329,10 @@ function calculatePricePerBaseUnit(ingredient: Ingredient): number {
 
 function Calculator() {
   const { products, ingredients, requirements } = useApp()
-  const [productId, setProductId] = useState('')
-  const [qtyToProduce, setQtyToProduce] = useState<number>(0)
-  const [customMarginPercent, setCustomMarginPercent] = useState<string>('')
-  const [costs, setCosts] = useState<AdditionalCost[]>([])
+  const [productId, setProductId] = useLocalStorageState<string>('so_calc_product', '')
+  const [qtyToProduce, setQtyToProduce] = useLocalStorageState<number>('so_calc_qty', 0)
+  const [customMarginPercent, setCustomMarginPercent] = useLocalStorageState<string>('so_calc_margin', '')
+  const [costs, setCosts] = useLocalStorageState<AdditionalCost[]>('so_calc_costs', [])
 
   const product = useMemo(() => products.find((p) => p.id === productId), [products, productId])
   const recipe = useMemo(() => requirements.filter((r) => r.productId === productId), [requirements, productId])
@@ -369,20 +368,20 @@ function Calculator() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
         <div className="md:col-span-2">
           <label className="block text-sm mb-1">Pilih Produk</label>
-          <select value={productId} onChange={(e) => setProductId(e.target.value)} className="w-full border rounded px-3 py-2">
+          <Select value={productId} onChange={(e) => setProductId((e.target as HTMLSelectElement).value)}>
             <option value="">-- pilih --</option>
             {products.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <div>
           <label className="block text-sm mb-1">Jumlah yang mau dibuat</label>
-          <input type="number" value={qtyToProduce} onChange={(e) => setQtyToProduce(Number(e.target.value))} className="w-full border rounded px-3 py-2" placeholder="contoh: 20" />
+          <NumericInput value={qtyToProduce} onChange={setQtyToProduce} allowDecimals placeholder="contoh: 20" />
         </div>
         <div>
           <label className="block text-sm mb-1">Custom Margin (%)</label>
-          <input type="number" value={customMarginPercent} onChange={(e) => setCustomMarginPercent(e.target.value)} className="w-full border rounded px-3 py-2" placeholder={`default: ${product?.defaultMarginPercent ?? 0}`} />
+          <NumericInput value={Number(customMarginPercent || 0)} onChange={(v) => setCustomMarginPercent(String(v))} allowDecimals placeholder={`default: ${product?.defaultMarginPercent ?? 0}`} />
         </div>
       </div>
 
@@ -410,10 +409,10 @@ function Calculator() {
                     <input value={c.name} onChange={(e) => updateCostRow(idx, { name: e.target.value })} className="w-full border rounded px-2 py-1" placeholder="Gas / Listrik / Kemasan" />
                   </td>
                   <td className="p-2 border">
-                    <input type="number" value={c.amount} onChange={(e) => updateCostRow(idx, { amount: Number(e.target.value) })} className="w-full border rounded px-2 py-1" placeholder="0" />
+                    <NumericInput value={c.amount} onChange={(val) => updateCostRow(idx, { amount: val })} className="h-9 px-2" placeholder="0" />
                   </td>
                   <td className="p-2 border text-center">
-                    <button onClick={() => deleteCostRow(idx)} className="text-red-600 hover:underline">Hapus</button>
+                    <Button variant="dangerOutline" size="sm" onClick={() => deleteCostRow(idx)}>Hapus</Button>
                   </td>
                 </tr>
               ))}
@@ -490,10 +489,12 @@ function Calculator() {
 export default function Page() {
   return (
     <AppProvider>
-      <div className="space-y-6">
-        <header className="mb-4">
-          <h1 className="text-2xl font-bold">sadean-overflow</h1>
-          <p className="text-sm text-gray-600">Hitung modal, harga, dan laba produk makanan berbasis resep.</p>
+      <TopNav
+        left={<div className="flex items-center gap-2"><TbCalculator /><span className="text-xl font-serif">sadean-overflow</span><span className="folderly-oval text-xs">Calculator</span></div>}
+      />
+      <main className="max-w-5xl mx-auto p-6 space-y-6">
+        <header>
+          <p className="text-sm text-black/60">Hitung modal, harga, dan laba produk berbasis resep.</p>
         </header>
 
         <Section title="1) Data Produk">
@@ -511,7 +512,7 @@ export default function Page() {
         <Section title="4) Hitung Harga & Laba">
           <Calculator />
         </Section>
-      </div>
+      </main>
     </AppProvider>
   )
 }
