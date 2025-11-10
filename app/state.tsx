@@ -5,6 +5,7 @@ import { useLocalStorageState } from '@/hooks/useLocalStorage'
 
 type AppContextType = AppState & {
   addProduct: (p: Omit<Product, 'id'>) => void
+  updateProduct: (id: string, patch: Partial<Omit<Product, 'id'>>) => void
   removeProduct: (id: string) => void
   addIngredient: (i: Omit<Ingredient, 'id'>) => void
   updateIngredient: (id: string, patch: Partial<Omit<Ingredient, 'id'>>) => void
@@ -24,6 +25,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const addProduct: AppContextType['addProduct'] = useCallback((p) => {
     setProducts((prev) => [...prev, { ...p, id: genId('prd') }])
+  }, [setProducts])
+
+  const updateProduct: AppContextType['updateProduct'] = useCallback((id, patch) => {
+    setProducts((prev) => prev.map((prd) => (prd.id === id ? { ...prd, ...patch } : prd)))
   }, [setProducts])
 
   const removeProduct: AppContextType['removeProduct'] = useCallback((id) => {
@@ -59,8 +64,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [setRequirements])
 
   const value = useMemo(
-    () => ({ products, ingredients, requirements, addProduct, removeProduct, addIngredient, updateIngredient, removeIngredient, upsertRequirementRows, removeRequirementRow }),
-    [products, ingredients, requirements, addProduct, removeProduct, addIngredient, updateIngredient, removeIngredient, upsertRequirementRows, removeRequirementRow]
+    () => ({ products, ingredients, requirements, addProduct, updateProduct, removeProduct, addIngredient, updateIngredient, removeIngredient, upsertRequirementRows, removeRequirementRow }),
+    [products, ingredients, requirements, addProduct, updateProduct, removeProduct, addIngredient, updateIngredient, removeIngredient, upsertRequirementRows, removeRequirementRow]
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

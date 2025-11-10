@@ -8,6 +8,7 @@ type NumericInputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onCh
   allowDecimals?: boolean
   thousandSeparator?: string
   decimalSeparator?: string
+  allowEmpty?: boolean
 }
 
 export function NumericInput({
@@ -16,6 +17,7 @@ export function NumericInput({
   allowDecimals = false,
   thousandSeparator = '.',
   decimalSeparator = ',',
+  allowEmpty = false,
   className,
   onBlur,
   ...rest
@@ -57,12 +59,20 @@ export function NumericInput({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value
     setDisplay(raw)
+    if (allowEmpty && raw.trim() === '') {
+      onChange(NaN as unknown as number)
+      return
+    }
     const num = parseToNumber(raw)
     onChange(num)
   }
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     // Format nicely on blur
+    if (allowEmpty && display.trim() === '') {
+      onBlur?.(e)
+      return
+    }
     const num = parseToNumber(display)
     if (allowDecimals) {
       // Preserve decimals as typed count (do not trim trailing zeros aggressively)
@@ -90,4 +100,3 @@ export function NumericInput({
     />
   )
 }
-

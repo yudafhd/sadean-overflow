@@ -5,6 +5,9 @@ import { TbCalculator } from 'react-icons/tb'
 import { AppProvider, useApp } from '@/state'
 import type { AdditionalCost, Ingredient, Product, ProductRequirement } from '@/types'
 import { TopNav } from '@/folderly/components/Nav'
+import { Tabs } from '@/folderly/components/Tabs'
+import { Badge } from '@/folderly/components/Badge'
+import { Card } from '@/folderly/components/Card'
 import { Button } from '@/folderly/components/Button'
 import { TextInput, Select } from '@/folderly/components/Input'
 import { NumericInput } from '@/folderly/components/NumericInput'
@@ -20,8 +23,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function CreateProductForm() {
-  const { addProduct, removeProduct, products, requirements, ingredients } = useApp()
+  const { addProduct, updateProduct, removeProduct, products, requirements, ingredients } = useApp()
   const [form, setForm] = useState<Omit<Product, 'id'>>({ name: '', type: '', defaultMarginPercent: 30 })
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [edit, setEdit] = useState<{ name: string; type: string; defaultMarginPercent: number } | null>(null)
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,33 +61,89 @@ function CreateProductForm() {
               const recipeLines = requirements.filter((r) => r.productId === p.id)
               return (
                 <li key={p.id} className="border rounded px-3 py-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{p.name} — {p.type} — Margin: {p.defaultMarginPercent}%</span>
-                    <Button variant="dangerOutline" size="sm" onClick={() => removeProduct(p.id)}>Hapus</Button>
-                  </div>
-                  <div className="mt-2 text-[13px] text-black/70">
-                    <div className="font-medium mb-1">Daftar Resep:</div>
-                    {recipeLines.length === 0 ? (
-                      <div className="italic text-black/50">Belum ada resep.</div>
-                    ) : (
-                      <ul className="list-disc pl-5 space-y-0.5">
-                        {recipeLines.map((r) => {
-                          const ing = ingredients.find((i) => i.id === r.ingredientId)
-                          return (
-                            <li key={`${r.productId}-${r.ingredientId}`}>
-                              {ing ? (
-                                <>
-                                  {ing.name} — {r.qtyPerProduct} {ing.unit}
-                                </>
-                              ) : (
-                                <span className="text-black/50">Bahan tidak ditemukan</span>
-                              )}
-                            </li>
-                          )
-                        })}
-                      </ul>
-                    )}
-                  </div>
+                  {editingId !== p.id ? (
+                    <>
+                      <div className="flex items-center justify-between gap-3">
+                        <span>{p.name} — {p.type} — Margin: {p.defaultMarginPercent}%</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditingId(p.id)
+                              setEdit({ name: p.name, type: p.type, defaultMarginPercent: p.defaultMarginPercent })
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Button variant="dangerOutline" size="sm" onClick={() => removeProduct(p.id)}>Hapus</Button>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-[13px] text-black/70">
+                        <div className="font-medium mb-1">Daftar Resep:</div>
+                        {recipeLines.length === 0 ? (
+                          <div className="italic text-black/50">Belum ada resep.</div>
+                        ) : (
+                          <ul className="list-disc pl-5 space-y-0.5">
+                            {recipeLines.map((r) => {
+                              const ing = ingredients.find((i) => i.id === r.ingredientId)
+                              return (
+                                <li key={`${r.productId}-${r.ingredientId}`}>
+                                  {ing ? (
+                                    <>
+                                      {ing.name} — {r.qtyPerProduct} {ing.unit}
+                                    </>
+                                  ) : (
+                                    <span className="text-black/50">Bahan tidak ditemukan</span>
+                                  )}
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                      <div>
+                        <label className="block text-sm mb-1">Nama Produk</label>
+                        <TextInput value={edit?.name || ''} onChange={(e) => setEdit((s) => (s ? { ...s, name: e.target.value } : s))} />
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-1">Tipe</label>
+                        <TextInput value={edit?.type || ''} onChange={(e) => setEdit((s) => (s ? { ...s, type: e.target.value } : s))} />
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-1">Margin Default (%)</label>
+                        <NumericInput
+                          value={edit?.defaultMarginPercent ?? 0}
+                          onChange={(v) => setEdit((s) => (s ? { ...s, defaultMarginPercent: Number(v) } : s))}
+                          allowDecimals
+                        />
+                      </div>
+                      <div className="flex items-end gap-2">
+                        <Button
+                          onClick={() => {
+                            if (!edit) return
+                            updateProduct(p.id, { name: edit.name, type: edit.type, defaultMarginPercent: Number(edit.defaultMarginPercent || 0) })
+                            setEditingId(null)
+                            setEdit(null)
+                          }}
+                        >
+                          Simpan
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setEditingId(null)
+                            setEdit(null)
+                          }}
+                        >
+                          Batal
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </li>
               )
             })}
@@ -95,25 +156,32 @@ function CreateProductForm() {
 
 function AddIngredientForm() {
   const { ingredients, addIngredient, updateIngredient, removeIngredient } = useApp()
-  const [form, setForm] = useState<Omit<Ingredient, 'id'>>({ name: '', unit: 'kg', pricePerUnit: 0 })
-  const [totalUnitQty, setTotalUnitQty] = useState<number>(0)
-  const [totalUnitPrice, setTotalUnitPrice] = useState<number>(0)
+  const [form, setForm] = useState<{ name: string; unit: Ingredient['unit'] | ''; pricePerUnit: number }>({ name: '', unit: '', pricePerUnit: NaN as unknown as number })
+  const [totalUnitQty, setTotalUnitQty] = useState<number>(NaN as unknown as number)
+  const [totalUnitPrice, setTotalUnitPrice] = useState<number>(NaN as unknown as number)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [edit, setEdit] = useState<{ name: string; unit: Ingredient['unit']; pricePerUnit: number } | null>(null)
+  const [editTotalUnitQty, setEditTotalUnitQty] = useState<number>(NaN as unknown as number)
+  const [editTotalUnitPrice, setEditTotalUnitPrice] = useState<number>(NaN as unknown as number)
 
   const computedPricePerUnit = useMemo(() => {
     if (totalUnitQty > 0 && totalUnitPrice > 0) return totalUnitPrice / totalUnitQty
     return 0
   }, [totalUnitQty, totalUnitPrice])
 
+  const editComputedPricePerUnit = useMemo(() => {
+    if (editTotalUnitQty > 0 && editTotalUnitPrice > 0) return editTotalUnitPrice / editTotalUnitQty
+    return 0
+  }, [editTotalUnitQty, editTotalUnitPrice])
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) return
     const pricePerUnit = computedPricePerUnit > 0 ? computedPricePerUnit : Number(form.pricePerUnit || 0)
-    addIngredient({ name: form.name, unit: form.unit, pricePerUnit })
-    setForm({ name: '', unit: 'kg', pricePerUnit: 0 })
-    setTotalUnitQty(0)
-    setTotalUnitPrice(0)
+    addIngredient({ name: form.name, unit: form.unit as any, pricePerUnit })
+    setForm({ name: '', unit: '', pricePerUnit: NaN as unknown as number })
+    setTotalUnitQty(NaN as unknown as number)
+    setTotalUnitPrice(NaN as unknown as number)
   }
 
   return (
@@ -130,7 +198,8 @@ function AddIngredientForm() {
               value={totalUnitQty}
               onChange={setTotalUnitQty}
               allowDecimals
-              placeholder="contoh: 100"
+              allowEmpty
+              placeholder="10"
               className="rounded-r-none border-r-0"
             />
             <Select
@@ -138,6 +207,7 @@ function AddIngredientForm() {
               onChange={(e) => setForm((s) => ({ ...s, unit: (e.target as HTMLSelectElement).value as any }))}
               className="rounded-l-none"
             >
+              <option value="">pilih satuan</option>
               <option value="gram">gram</option>
               <option value="kg">kg</option>
               <option value="pcs">pcs</option>
@@ -150,7 +220,8 @@ function AddIngredientForm() {
           <NumericInput
             value={totalUnitPrice}
             onChange={setTotalUnitPrice}
-            placeholder="contoh: 10.000"
+            allowEmpty
+            placeholder="1.000"
           />
         </div>
         <div>
@@ -182,6 +253,8 @@ function AddIngredientForm() {
                           onClick={() => {
                             setEditingId(i.id)
                             setEdit({ name: i.name, unit: i.unit, pricePerUnit: i.pricePerUnit })
+                            setEditTotalUnitQty(NaN as unknown as number)
+                            setEditTotalUnitPrice(NaN as unknown as number)
                           }}
                         >
                           Edit
@@ -212,29 +285,50 @@ function AddIngredientForm() {
                       </div>
                       <div>
                         <label className="block text-sm mb-1">Satuan</label>
-                        <Select
-                          value={edit?.unit || 'kg'}
-                          onChange={(e) => setEdit((s) => (s ? { ...s, unit: (e.target as HTMLSelectElement).value as any } : s))}
-                        >
-                          <option value="gram">gram</option>
-                          <option value="kg">kg</option>
-                          <option value="pcs">pcs</option>
-                          <option value="liter">liter</option>
-                        </Select>
+                        <div className="flex">
+                          <NumericInput
+                            value={editTotalUnitQty}
+                            onChange={setEditTotalUnitQty}
+                            allowDecimals
+                            allowEmpty
+                            placeholder="contoh: 100"
+                            className="rounded-r-none border-r-0"
+                          />
+                          <Select
+                            value={edit?.unit || 'kg'}
+                            onChange={(e) => setEdit((s) => (s ? { ...s, unit: (e.target as HTMLSelectElement).value as any } : s))}
+                            className="rounded-l-none"
+                          >
+                            <option value="gram">gram</option>
+                            <option value="kg">kg</option>
+                            <option value="pcs">pcs</option>
+                            <option value="liter">liter</option>
+                          </Select>
+                        </div>
                       </div>
                       <div>
-                        <label className="block text-sm mb-1">Harga per Unit</label>
+                        <label className="block text-sm mb-1">Harga Satuan</label>
                         <NumericInput
-                          value={edit?.pricePerUnit ?? 0}
-                          onChange={(val) => setEdit((s) => (s ? { ...s, pricePerUnit: val } : s))}
-                          placeholder="contoh: 150"
+                          value={editTotalUnitPrice}
+                          onChange={setEditTotalUnitPrice}
+                          allowEmpty
+                          placeholder="contoh: 10.000"
                         />
+                      </div>
+                      <div>
+                        <label className="block text-sm mb-1">Harga per Unit (otomatis)</label>
+                        <div className="w-full border rounded-2xl px-3 py-2 bg-gray-50">
+                          {editComputedPricePerUnit > 0
+                            ? Number(editComputedPricePerUnit.toFixed(6)).toLocaleString('id-ID')
+                            : (edit?.pricePerUnit ? edit.pricePerUnit.toLocaleString('id-ID') : '—')}
+                        </div>
                       </div>
                       <div className="flex items-end gap-2">
                         <Button
                           onClick={() => {
                             if (!edit) return
-                            updateIngredient(i.id, { name: edit.name, unit: edit.unit, pricePerUnit: Number(edit.pricePerUnit || 0) })
+                            const computed = editComputedPricePerUnit > 0 ? editComputedPricePerUnit : Number(edit.pricePerUnit || 0)
+                            updateIngredient(i.id, { name: edit.name, unit: edit.unit, pricePerUnit: computed })
                             setEditingId(null)
                             setEdit(null)
                           }}
@@ -263,6 +357,94 @@ function AddIngredientForm() {
   )
 }
 
+function ProductListSimple() {
+  const { products, requirements, ingredients } = useApp()
+  if (products.length === 0) return <div className="text-sm text-black/50">Belum ada produk.</div>
+  return (
+    <div className="space-y-3">
+      {products.map((p) => {
+        const recipeLines = requirements
+          .filter((r) => r.productId === p.id)
+          .map((r) => ({
+            ...r,
+            ingredient: ingredients.find((i) => i.id === r.ingredientId),
+          }))
+          .filter((r) => !!r.ingredient)
+          .sort((a, b) => (a.ingredient!.name.localeCompare(b.ingredient!.name)))
+
+        return (
+          <div key={p.id}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-semibold truncate">{p.name}</h3>
+                  <Badge>{p.type || '—'}</Badge>
+                  <Badge kind="ongoing">Margin {p.defaultMarginPercent}%</Badge>
+                  <Badge kind="archived">{recipeLines.length} bahan</Badge>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              {recipeLines.length === 0 ? (
+                <div className="text-sm italic text-black/50">Belum ada resep.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="p-2 border text-left">Bahan</th>
+                        <th className="p-2 border text-right">Qty</th>
+                        <th className="p-2 border text-left">Satuan</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recipeLines.map((r) => (
+                        <tr key={`${r.productId}-${r.ingredientId}`}>
+                          <td className="p-2 border">{r.ingredient!.name}</td>
+                          <td className="p-2 border text-right">{r.qtyPerProduct.toLocaleString('id-ID')}</td>
+                          <td className="p-2 border">{r.ingredient!.unit}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function IngredientListSimple() {
+  const { ingredients } = useApp()
+  if (ingredients.length === 0) return <div className="text-sm text-black/50">Belum ada bahan baku.</div>
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm border">
+        <thead>
+          <tr className="bg-gray-50">
+            <th className="p-2 border text-left">Nama</th>
+            <th className="p-2 border text-left">Satuan</th>
+            <th className="p-2 border text-right">Harga/Unit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ingredients.map((i) => (
+            <tr key={i.id}>
+              <td className="p-2 border">{i.name}</td>
+              <td className="p-2 border">{i.unit}</td>
+              <td className="p-2 border text-right">{i.pricePerUnit.toLocaleString('id-ID')}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 function RecipeEditor() {
   const { products, ingredients, requirements, upsertRequirementRows, removeRequirementRow } = useApp()
   const [selectedProductId, setSelectedProductId] = useLocalStorageState<string>('so_recipe_selected_product', '')
@@ -282,7 +464,7 @@ function RecipeEditor() {
     syncFromState(pid)
   }
 
-  const addRow = () => setLocalRows((r) => [...r, { ingredientId: '', qtyPerProduct: 0 }])
+  const addRow = () => setLocalRows((r) => [...r, { ingredientId: '', qtyPerProduct: NaN as unknown as number }])
   const updateRow = (idx: number, patch: Partial<Omit<ProductRequirement, 'productId'>>) => {
     setLocalRows((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)))
   }
@@ -326,7 +508,7 @@ function RecipeEditor() {
           <tbody>
             {localRows.length === 0 && (
               <tr>
-                <td colSpan={3} className="p-3 text-center text-gray-500">Belum ada baris. Pilih produk dan klik &quot;Tambah Baris&quot;.</td>
+                <td colSpan={3} className="p-3 text-center text-gray-500">Belum ada produksi.</td>
               </tr>
             )}
             {localRows.map((row, idx) => (
@@ -342,9 +524,10 @@ function RecipeEditor() {
                 <td className="p-2 border">
                   <div className="flex items-center gap-2">
                     <NumericInput
-                      value={row.qtyPerProduct ?? 0}
+                      value={row.qtyPerProduct as number}
                       onChange={(val) => updateRow(idx, { qtyPerProduct: val })}
                       allowDecimals
+                      allowEmpty
                       className="h-9 px-2"
                     />
                     <span className="text-xs text-gray-600">{ingredients.find((i) => i.id === row.ingredientId)?.unit || '-'}</span>
@@ -373,7 +556,7 @@ function calculatePricePerBaseUnit(ingredient: Ingredient): number {
 function Calculator() {
   const { products, ingredients, requirements } = useApp()
   const [productId, setProductId] = useState('')
-  const [qtyToProduce, setQtyToProduce] = useState<number>(0)
+  const [qtyToProduce, setQtyToProduce] = useState<number>(NaN as unknown as number)
   const [customMarginPercent, setCustomMarginPercent] = useState<string>('')
   const [costs, setCosts] = useState<AdditionalCost[]>([])
 
@@ -390,21 +573,22 @@ function Calculator() {
   }, [recipe, ingredients])
 
   const totalAdditionalCost = useMemo(() => costs.reduce((s, c) => s + (Number(c.amount) || 0), 0), [costs])
-  const additionalCostPerProduct = qtyToProduce > 0 ? totalAdditionalCost / qtyToProduce : 0
+  const safeQty = Number.isFinite(qtyToProduce) ? qtyToProduce : 0
+  const additionalCostPerProduct = safeQty > 0 ? totalAdditionalCost / safeQty : 0
 
   const productionCostPerProduct = materialCostPerProduct + additionalCostPerProduct
-  const initialCapital = productionCostPerProduct * qtyToProduce
+  const initialCapital = productionCostPerProduct * safeQty
 
   const usedMargin = customMarginPercent !== '' ? Number(customMarginPercent) : (product?.defaultMarginPercent ?? 0)
   const sellingPricePerProduct = productionCostPerProduct * (1 + (usedMargin || 0) / 100)
   const profitPerProduct = sellingPricePerProduct - productionCostPerProduct
-  const totalProfit = profitPerProduct * qtyToProduce
+  const totalProfit = profitPerProduct * safeQty
 
   const addCostRow = () => setCosts((c) => [...c, { id: Math.random().toString(36).slice(2), name: '', amount: 0 }])
   const updateCostRow = (idx: number, patch: Partial<AdditionalCost>) => setCosts((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)))
   const deleteCostRow = (idx: number) => setCosts((rows) => rows.filter((_, i) => i !== idx))
 
-  const disabled = !product || qtyToProduce <= 0
+  const disabled = !product || safeQty <= 0
 
   return (
     <div className="space-y-4">
@@ -420,11 +604,17 @@ function Calculator() {
         </div>
         <div>
           <label className="block text-sm mb-1">Jumlah yang mau dibuat</label>
-          <NumericInput value={qtyToProduce} onChange={setQtyToProduce} allowDecimals placeholder="contoh: 20" />
+          <NumericInput value={qtyToProduce} onChange={setQtyToProduce} allowDecimals allowEmpty placeholder="contoh: 20" />
         </div>
         <div>
           <label className="block text-sm mb-1">Custom Margin (%)</label>
-          <NumericInput value={Number(customMarginPercent || 0)} onChange={(v) => setCustomMarginPercent(String(v))} allowDecimals placeholder={`default: ${product?.defaultMarginPercent ?? 0}`} />
+          <NumericInput
+            value={customMarginPercent === '' ? (NaN as unknown as number) : Number(customMarginPercent)}
+            onChange={(v) => setCustomMarginPercent(Number.isFinite(v) ? String(v) : '')}
+            allowDecimals
+            allowEmpty
+            placeholder={`default: ${product?.defaultMarginPercent ?? 0}`}
+          />
         </div>
       </div>
 
@@ -466,18 +656,19 @@ function Calculator() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1">
+          <h4 className="font-medium">Perhitungan</h4>
+          <div className="text-sm">Harga pokok per produk: <span className="font-semibold">{productionCostPerProduct.toLocaleString('id-ID')}</span></div>
+          <div className="text-sm">Harga jual per produk: <span className="font-semibold">{sellingPricePerProduct.toLocaleString('id-ID')}</span></div>
+          <div className="text-sm">Laba per produk: <span className="font-semibold">{profitPerProduct.toLocaleString('id-ID')}</span></div>
+        </div>
+
+        <div className="space-y-1">
           <h4 className="font-medium">Ringkasan</h4>
           <div className="text-sm">Margin dipakai: <span className="font-semibold">{usedMargin}%</span></div>
           <div className="text-sm">Total biaya lain: <span className="font-semibold">{totalAdditionalCost.toLocaleString('id-ID')}</span></div>
-          <div className="text-sm">Total biaya bahan: <span className="font-semibold">{(materialCostPerProduct * qtyToProduce).toLocaleString('id-ID')}</span></div>
-        </div>
-        <div className="space-y-1">
-          <h4 className="font-medium">Hasil</h4>
-          <div className="text-sm">Harga pokok produksi per produk: <span className="font-semibold">{productionCostPerProduct.toLocaleString('id-ID')}</span></div>
-          <div className="text-sm">Harga jual per produk: <span className="font-semibold">{sellingPricePerProduct.toLocaleString('id-ID')}</span></div>
-          <div className="text-sm">Laba per produk: <span className="font-semibold">{profitPerProduct.toLocaleString('id-ID')}</span></div>
-          <div className="text-sm">Modal awal (total batch): <span className="font-semibold">{initialCapital.toLocaleString('id-ID')}</span></div>
-          <div className="text-sm">Total laba: <span className="font-semibold">{totalProfit.toLocaleString('id-ID')}</span></div>
+          <div className="text-sm">Total biaya bahan: <span className="font-semibold">{((materialCostPerProduct * qtyToProduce) || 0).toLocaleString('id-ID')}</span></div>
+          <div className="text-sm">Total Modal awal: <span className="font-semibold">{initialCapital.toLocaleString('id-ID')}</span></div>
+          <div className="text-sm">Total Profit: <span className="font-semibold">{totalProfit.toLocaleString('id-ID')}</span></div>
         </div>
       </div>
 
@@ -530,28 +721,53 @@ function Calculator() {
 }
 
 export default function Page() {
+  const [tab, setTab] = useLocalStorageState<string>('so_ui_tab', 'isi-data')
   return (
     <AppProvider>
       <TopNav
-        left={<div className="flex items-center gap-2"><TbCalculator /><span className="text-xl font-serif">sadean-overflow</span><span className="folderly-oval text-xs">Calculator</span></div>}
+        left={<div className="flex items-center gap-2"><TbCalculator /><span className="text-xl font-serif">Sadean Overflow</span></div>}
       />
       <main className="max-w-5xl mx-auto py-6 space-y-6">
+        <Tabs
+          value={tab}
+          onChange={setTab}
+          tabs={[
+            { value: 'isi-data', label: 'Data' },
+            { value: 'produk', label: 'Produk' },
+            { value: 'perhitungan', label: 'Perhitungan' },
+          ]}
+        />
 
-        <Section title="1) Data Produk">
-          <CreateProductForm />
-        </Section>
+        {tab === 'isi-data' && (
+          <div className="space-y-6">
+            <Section title="1) Data Produk">
+              <CreateProductForm />
+            </Section>
+            <Section title="2) Data Bahan Baku">
+              <AddIngredientForm />
+            </Section>
+            <Section title="3) Produksi">
+              <RecipeEditor />
+            </Section>
+          </div>
+        )}
 
-        <Section title="2) Data Bahan Baku">
-          <AddIngredientForm />
-        </Section>
+        {tab === 'produk' && (
+          <div className="space-y-6">
+            <Section title="Produk & Resep">
+              <ProductListSimple />
+            </Section>
+            <Section title="Bahan Baku">
+              <IngredientListSimple />
+            </Section>
+          </div>
+        )}
 
-        <Section title="3) Produksi">
-          <RecipeEditor />
-        </Section>
-
-        <Section title="4) Hitung Harga & Laba">
-          <Calculator />
-        </Section>
+        {tab === 'perhitungan' && (
+          <Section title="4) Hitung Harga & Laba">
+            <Calculator />
+          </Section>
+        )}
       </main>
     </AppProvider>
   )
