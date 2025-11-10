@@ -20,7 +20,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function CreateProductForm() {
-  const { addProduct, products } = useApp()
+  const { addProduct, removeProduct, products, requirements, ingredients } = useApp()
   const [form, setForm] = useState<Omit<Product, 'id'>>({ name: '', type: '', defaultMarginPercent: 30 })
 
   const onSubmit = (e: React.FormEvent) => {
@@ -51,13 +51,41 @@ function CreateProductForm() {
       {products.length > 0 && (
         <div className="mt-4">
           <h4 className="font-medium mb-2">Daftar Produk</h4>
-          <ul className="space-y-1 text-sm">
-            {products.map((p) => (
-              <li key={p.id} className="flex items-center justify-between border rounded px-3 py-2">
-                <span>{p.name} — {p.type} — Margin: {p.defaultMarginPercent}%</span>
-                {/* <code className="text-gray-400">{p.id}</code> */}
-              </li>
-            ))}
+          <ul className="space-y-2 text-sm">
+            {products.map((p) => {
+              const recipeLines = requirements.filter((r) => r.productId === p.id)
+              return (
+                <li key={p.id} className="border rounded px-3 py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>{p.name} — {p.type} — Margin: {p.defaultMarginPercent}%</span>
+                    <Button variant="dangerOutline" size="sm" onClick={() => removeProduct(p.id)}>Hapus</Button>
+                  </div>
+                  <div className="mt-2 text-[13px] text-black/70">
+                    <div className="font-medium mb-1">Daftar Resep:</div>
+                    {recipeLines.length === 0 ? (
+                      <div className="italic text-black/50">Belum ada resep.</div>
+                    ) : (
+                      <ul className="list-disc pl-5 space-y-0.5">
+                        {recipeLines.map((r) => {
+                          const ing = ingredients.find((i) => i.id === r.ingredientId)
+                          return (
+                            <li key={`${r.productId}-${r.ingredientId}`}>
+                              {ing ? (
+                                <>
+                                  {ing.name} — {r.qtyPerProduct} {ing.unit}
+                                </>
+                              ) : (
+                                <span className="text-black/50">Bahan tidak ditemukan</span>
+                              )}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         </div>
       )}
@@ -66,7 +94,7 @@ function CreateProductForm() {
 }
 
 function AddIngredientForm() {
-  const { ingredients, addIngredient, updateIngredient } = useApp()
+  const { ingredients, addIngredient, updateIngredient, removeIngredient } = useApp()
   const [form, setForm] = useState<Omit<Ingredient, 'id'>>({ name: '', unit: 'kg', pricePerUnit: 0 })
   const [totalUnitQty, setTotalUnitQty] = useState<number>(0)
   const [totalUnitPrice, setTotalUnitPrice] = useState<number>(0)
@@ -154,6 +182,19 @@ function AddIngredientForm() {
                           }}
                         >
                           Edit
+                        </Button>
+                        <Button
+                          variant="dangerOutline"
+                          size="sm"
+                          onClick={() => {
+                            removeIngredient(i.id)
+                            if (editingId === i.id) {
+                              setEditingId(null)
+                              setEdit(null)
+                            }
+                          }}
+                        >
+                          Hapus
                         </Button>
                       </div>
                     </div>
@@ -323,16 +364,15 @@ function RecipeEditor() {
 }
 
 function calculatePricePerBaseUnit(ingredient: Ingredient): number {
-  // price per ingredient's own unit (kg, gr, pcs, liter)
   return ingredient.pricePerUnit
 }
 
 function Calculator() {
   const { products, ingredients, requirements } = useApp()
-  const [productId, setProductId] = useLocalStorageState<string>('so_calc_product', '')
-  const [qtyToProduce, setQtyToProduce] = useLocalStorageState<number>('so_calc_qty', 0)
-  const [customMarginPercent, setCustomMarginPercent] = useLocalStorageState<string>('so_calc_margin', '')
-  const [costs, setCosts] = useLocalStorageState<AdditionalCost[]>('so_calc_costs', [])
+  const [productId, setProductId] = useState('')
+  const [qtyToProduce, setQtyToProduce] = useState<number>(0)
+  const [customMarginPercent, setCustomMarginPercent] = useState<string>('')
+  const [costs, setCosts] = useState<AdditionalCost[]>([])
 
   const product = useMemo(() => products.find((p) => p.id === productId), [products, productId])
   const recipe = useMemo(() => requirements.filter((r) => r.productId === productId), [requirements, productId])

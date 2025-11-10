@@ -5,8 +5,10 @@ import { useLocalStorageState } from '@/hooks/useLocalStorage'
 
 type AppContextType = AppState & {
   addProduct: (p: Omit<Product, 'id'>) => void
+  removeProduct: (id: string) => void
   addIngredient: (i: Omit<Ingredient, 'id'>) => void
   updateIngredient: (id: string, patch: Partial<Omit<Ingredient, 'id'>>) => void
+  removeIngredient: (id: string) => void
   upsertRequirementRows: (productId: string, rows: Omit<ProductRequirement, 'productId'>[]) => void
   removeRequirementRow: (productId: string, ingredientId: string) => void
 }
@@ -24,12 +26,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setProducts((prev) => [...prev, { ...p, id: genId('prd') }])
   }
 
+  const removeProduct: AppContextType['removeProduct'] = (id) => {
+    setProducts((prev) => prev.filter((prd) => prd.id !== id))
+    // purge requirements for this product
+    setRequirements((prev) => prev.filter((r) => r.productId !== id))
+  }
+
   const addIngredient: AppContextType['addIngredient'] = (i) => {
     setIngredients((prev) => [...prev, { ...i, id: genId('ing') }])
   }
 
   const updateIngredient: AppContextType['updateIngredient'] = (id, patch) => {
     setIngredients((prev) => prev.map((ing) => (ing.id === id ? { ...ing, ...patch } : ing)))
+  }
+
+  const removeIngredient: AppContextType['removeIngredient'] = (id) => {
+    setIngredients((prev) => prev.filter((ing) => ing.id !== id))
+    // also purge requirements that reference this ingredient
+    setRequirements((prev) => prev.filter((r) => r.ingredientId !== id))
   }
 
   const upsertRequirementRows: AppContextType['upsertRequirementRows'] = (productId, rows) => {
@@ -45,7 +59,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }
 
   const value = useMemo(
-    () => ({ products, ingredients, requirements, addProduct, addIngredient, updateIngredient, upsertRequirementRows, removeRequirementRow }),
+    () => ({ products, ingredients, requirements, addProduct, removeProduct, addIngredient, updateIngredient, removeIngredient, upsertRequirementRows, removeRequirementRow }),
     [products, ingredients, requirements]
   )
 
