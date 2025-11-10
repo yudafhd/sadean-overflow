@@ -11,8 +11,8 @@ export function SplashGate({ children, durationMs = 4500 }: { children: React.Re
   const messages = React.useMemo(
     () => [
       'Menyiapkan pemanas…',
-      'Menggoreng sate…',
-      'Berusaha memanaskan sate…',
+      'Membakar sate…',
+      'Memanaskan sate…',
       'Hampir siap…',
       'Ready! 🎉',
     ],

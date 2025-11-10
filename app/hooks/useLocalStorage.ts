@@ -1,28 +1,21 @@
 "use client"
-import { useCallback, useEffect, useRef, useState } from 'react'
+
+import { useCallback } from 'react'
+import { useEffect, useState } from 'react'
 
 export function useLocalStorageState<T>(key: string, initial: T) {
-  // Stabilize initial value across renders to avoid effect loops.
-  const initialRef = useRef(initial)
-
-  const read = useCallback((): T => {
-    if (typeof window === 'undefined') return initialRef.current
+  // Initialize from localStorage on first client render (lazy initializer).
+  const [value, setValue] = useState<T>(() => {
+    if (typeof window === 'undefined') return initial
     try {
       const raw = window.localStorage.getItem(key)
-      return raw ? (JSON.parse(raw) as T) : initialRef.current
+      if (!raw) return initial
+      const parsed = JSON.parse(raw) as T | null
+      return (parsed ?? initial) as T
     } catch {
-      return initialRef.current
+      return initial
     }
-  }, [key])
-
-  // Initialize with `initial` on both server and client for hydration stability.
-  // Read from localStorage after mount to avoid SSR/client mismatch.
-  const [value, setValue] = useState<T>(initial)
-
-  useEffect(() => {
-    // On mount and when key changes, sync from localStorage
-    setValue(read())
-  }, [read])
+  })
 
   useEffect(() => {
     try {

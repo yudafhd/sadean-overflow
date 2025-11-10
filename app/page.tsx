@@ -7,11 +7,11 @@ import type { AdditionalCost, Ingredient, Product, ProductRequirement } from '@/
 import { TopNav } from '@/folderly/components/Nav'
 import { Tabs } from '@/folderly/components/Tabs'
 import { Badge } from '@/folderly/components/Badge'
-import { Card } from '@/folderly/components/Card'
 import { Button } from '@/folderly/components/Button'
 import { TextInput, Select } from '@/folderly/components/Input'
 import { NumericInput } from '@/folderly/components/NumericInput'
 import { useLocalStorageState } from '@/hooks/useLocalStorage'
+import { Document, Page as PDFPage, Text, View, StyleSheet } from '@react-pdf/renderer'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -24,7 +24,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function CreateProductForm() {
   const { addProduct, updateProduct, removeProduct, products, requirements, ingredients } = useApp()
-  const [form, setForm] = useState<Omit<Product, 'id'>>({ name: '', type: '', defaultMarginPercent: 30 })
+  const [form, setForm] = useLocalStorageState<Omit<Product, 'id'>>('so_form_product', { name: '', type: '', defaultMarginPercent: 30 })
   const [editingId, setEditingId] = useState<string | null>(null)
   const [edit, setEdit] = useState<{ name: string; type: string; defaultMarginPercent: number } | null>(null)
 
@@ -156,9 +156,9 @@ function CreateProductForm() {
 
 function AddIngredientForm() {
   const { ingredients, addIngredient, updateIngredient, removeIngredient } = useApp()
-  const [form, setForm] = useState<{ name: string; unit: Ingredient['unit'] | ''; pricePerUnit: number }>({ name: '', unit: '', pricePerUnit: NaN as unknown as number })
-  const [totalUnitQty, setTotalUnitQty] = useState<number>(NaN as unknown as number)
-  const [totalUnitPrice, setTotalUnitPrice] = useState<number>(NaN as unknown as number)
+  const [form, setForm] = useLocalStorageState<{ name: string; unit: Ingredient['unit'] | ''; pricePerUnit: number }>('so_form_ingredient', { name: '', unit: '', pricePerUnit: NaN as unknown as number })
+  const [totalUnitQty, setTotalUnitQty] = useLocalStorageState<number>('so_form_ingredient_total_qty', NaN as unknown as number)
+  const [totalUnitPrice, setTotalUnitPrice] = useLocalStorageState<number>('so_form_ingredient_total_price', NaN as unknown as number)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [edit, setEdit] = useState<{ name: string; unit: Ingredient['unit']; pricePerUnit: number } | null>(null)
   const [editTotalUnitQty, setEditTotalUnitQty] = useState<number>(NaN as unknown as number)
@@ -448,11 +448,17 @@ function IngredientListSimple() {
 function RecipeEditor() {
   const { products, ingredients, requirements, upsertRequirementRows, removeRequirementRow } = useApp()
   const [selectedProductId, setSelectedProductId] = useLocalStorageState<string>('so_recipe_selected_product', '')
+  const [drafts, setDrafts] = useLocalStorageState<Record<string, Omit<ProductRequirement, 'productId'>[]>>('so_recipe_drafts', {})
 
   const rowsForSelected = useMemo(() => requirements.filter((r) => r.productId === selectedProductId), [requirements, selectedProductId])
   const [localRows, setLocalRows] = useState<Omit<ProductRequirement, 'productId'>[]>([])
 
   const syncFromState = (productId: string) => {
+    const draft = drafts[productId]
+    if (draft && Array.isArray(draft)) {
+      setLocalRows(draft)
+      return
+    }
     const base = requirements
       .filter((r) => r.productId === productId)
       .map(({ ingredientId, qtyPerProduct }) => ({ ingredientId, qtyPerProduct }))
@@ -464,13 +470,27 @@ function RecipeEditor() {
     syncFromState(pid)
   }
 
-  const addRow = () => setLocalRows((r) => [...r, { ingredientId: '', qtyPerProduct: NaN as unknown as number }])
+  const addRow = () => {
+    setLocalRows((r) => {
+      const next = [...r, { ingredientId: '', qtyPerProduct: NaN as unknown as number }]
+      if (selectedProductId) setDrafts((d) => ({ ...d, [selectedProductId]: next }))
+      return next
+    })
+  }
   const updateRow = (idx: number, patch: Partial<Omit<ProductRequirement, 'productId'>>) => {
-    setLocalRows((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)))
+    setLocalRows((rows) => {
+      const next = rows.map((r, i) => (i === idx ? { ...r, ...patch } : r))
+      if (selectedProductId) setDrafts((d) => ({ ...d, [selectedProductId]: next }))
+      return next
+    })
   }
   const deleteRow = (idx: number) => {
     const ingId = localRows[idx]?.ingredientId
-    setLocalRows((rows) => rows.filter((_, i) => i !== idx))
+    setLocalRows((rows) => {
+      const next = rows.filter((_, i) => i !== idx)
+      if (selectedProductId) setDrafts((d) => ({ ...d, [selectedProductId]: next }))
+      return next
+    })
     if (selectedProductId && ingId) removeRequirementRow(selectedProductId, ingId)
   }
 
@@ -478,6 +498,11 @@ function RecipeEditor() {
     if (!selectedProductId) return
     const filtered = localRows.filter((r) => r.ingredientId && r.qtyPerProduct > 0)
     upsertRequirementRows(selectedProductId, filtered)
+    // clear draft for this product
+    setDrafts((d) => {
+      const { [selectedProductId]: _omit, ...rest } = d
+      return rest
+    })
   }
 
   return (
@@ -553,6 +578,96 @@ function calculatePricePerBaseUnit(ingredient: Ingredient): number {
   return ingredient.pricePerUnit
 }
 
+const pdfStyles = StyleSheet.create({
+  page: { padding: 24, fontSize: 12 },
+  title: { fontSize: 25, fontWeight: "bold", marginBottom: 8 },
+  sectionTitle: { fontSize: 12, fontWeight: "bold", marginTop: 12, marginBottom: 6 },
+  row: { flexDirection: 'row' },
+  col: { flex: 1 },
+  kv: { fontSize: 10, flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
+  cell: { padding: 4, borderRight: 1, borderBottom: 1, fontSize: 10 },
+  headerCell: { padding: 4, borderRight: 1, borderBottom: 1, fontSize: 10, fontWeight: 700 },
+})
+
+function CalculationReportPDF({
+  productName,
+  qty,
+  usedMargin,
+  materialCostPerProduct,
+  additionalCostPerProduct,
+  productionCostPerProduct,
+  sellingPricePerProduct,
+  profitPerProduct,
+  totalProfit,
+  costs,
+  items,
+}: {
+  productName: string
+  qty: number
+  usedMargin: number
+  materialCostPerProduct: number
+  additionalCostPerProduct: number
+  productionCostPerProduct: number
+  sellingPricePerProduct: number
+  profitPerProduct: number
+  totalProfit: number
+  costs: AdditionalCost[]
+  items: { name: string; unit: string; qtyPerProduct: number; qtyTotal: number; pricePerUnit: number; subtotal: number }[]
+}) {
+  return (
+    <Document>
+      <PDFPage size="A4" style={pdfStyles.page}>
+        <Text style={pdfStyles.title}>Laporan Produksi — {productName || '-'}</Text>
+
+        <Text style={pdfStyles.sectionTitle}>Biaya Lain</Text>
+        {costs.length === 0 ? (
+          <Text>-</Text>
+        ) : (
+          costs.map((c) => <Text key={c.id}>• {c.name}: {Number(c.amount || 0).toLocaleString('id-ID')}</Text>)
+        )}
+
+        <View style={[pdfStyles.row, { marginTop: 10 }]}>
+          <View style={[pdfStyles.col, { paddingRight: 8 }]}>
+            <Text style={pdfStyles.sectionTitle}>Perhitungan</Text>
+            <View style={pdfStyles.kv}><Text>HPP</Text><Text>{productionCostPerProduct.toLocaleString('id-ID')}</Text></View>
+            <View style={pdfStyles.kv}><Text>Harga jual per produk</Text><Text>{sellingPricePerProduct.toLocaleString('id-ID')}</Text></View>
+            <View style={pdfStyles.kv}><Text>Laba per produk</Text><Text>{profitPerProduct.toLocaleString('id-ID')}</Text></View>
+          </View>
+          <View style={[pdfStyles.col, { paddingLeft: 8 }]}>
+            <Text style={pdfStyles.sectionTitle}>Ringkasan</Text>
+            <View style={pdfStyles.kv}><Text>Total produksi</Text><Text>{qty}</Text></View>
+            <View style={pdfStyles.kv}><Text>Margin dipakai</Text><Text>{usedMargin}%</Text></View>
+            <View style={pdfStyles.kv}><Text>Total biaya lain</Text><Text>{(additionalCostPerProduct * (qty || 0)).toLocaleString('id-ID')}</Text></View>
+            <View style={pdfStyles.kv}><Text>Total biaya bahan</Text><Text>{(materialCostPerProduct * (qty || 0)).toLocaleString('id-ID')}</Text></View>
+            <View style={pdfStyles.kv}><Text>Total Modal awal</Text><Text>{(productionCostPerProduct * (qty || 0)).toLocaleString('id-ID')}</Text></View>
+            <View style={pdfStyles.kv}><Text>Total Profit</Text><Text>{totalProfit.toLocaleString('id-ID')}</Text></View>
+          </View>
+        </View>
+
+        <Text style={pdfStyles.sectionTitle}>Ringkasan Bahan yang Harus Dibeli</Text>
+        <View style={[pdfStyles.row, { borderTop: 1, borderLeft: 1 }]}>
+          <Text style={[pdfStyles.headerCell, { width: '35%' }]}>Bahan</Text>
+          <Text style={[pdfStyles.headerCell, { width: '15%', textAlign: 'right' }]}>Qty/Produk</Text>
+          <Text style={[pdfStyles.headerCell, { width: '10%' }]}>Satuan</Text>
+          <Text style={[pdfStyles.headerCell, { width: '15%', textAlign: 'right' }]}>Qty Total</Text>
+          <Text style={[pdfStyles.headerCell, { width: '12.5%', textAlign: 'right' }]}>Harga/Unit</Text>
+          <Text style={[pdfStyles.headerCell, { width: '12.5%', textAlign: 'right' }]}>Subtotal</Text>
+        </View>
+        {items.map((it, idx) => (
+          <View key={idx} style={[pdfStyles.row, { borderLeft: 1 }]}>
+            <Text style={[pdfStyles.cell, { width: '35%' }]}>{it.name}</Text>
+            <Text style={[pdfStyles.cell, { width: '15%', textAlign: 'right' }]}>{it.qtyPerProduct.toLocaleString('id-ID')}</Text>
+            <Text style={[pdfStyles.cell, { width: '10%' }]}>{it.unit}</Text>
+            <Text style={[pdfStyles.cell, { width: '15%', textAlign: 'right' }]}>{it.qtyTotal.toLocaleString('id-ID')}</Text>
+            <Text style={[pdfStyles.cell, { width: '12.5%', textAlign: 'right' }]}>{it.pricePerUnit.toLocaleString('id-ID')}</Text>
+            <Text style={[pdfStyles.cell, { width: '12.5%', textAlign: 'right' }]}>{it.subtotal.toLocaleString('id-ID')}</Text>
+          </View>
+        ))}
+      </PDFPage>
+    </Document>
+  )
+}
+
 function Calculator() {
   const { products, ingredients, requirements } = useApp()
   const [productId, setProductId] = useState('')
@@ -589,6 +704,63 @@ function Calculator() {
   const deleteCostRow = (idx: number) => setCosts((rows) => rows.filter((_, i) => i !== idx))
 
   const disabled = !product || safeQty <= 0
+
+  const recipeItems = useMemo(() => {
+    return recipe.map((r) => {
+      const ing = ingredients.find((i) => i.id === r.ingredientId)
+      if (!ing) return null
+      const pricePerUnit = calculatePricePerBaseUnit(ing)
+      const qtyTotal = r.qtyPerProduct * (safeQty || 0)
+      const subtotal = qtyTotal * pricePerUnit
+      return {
+        name: ing.name,
+        unit: ing.unit,
+        qtyPerProduct: r.qtyPerProduct,
+        qtyTotal,
+        pricePerUnit,
+        subtotal,
+      }
+    }).filter(Boolean) as {
+      name: string; unit: string; qtyPerProduct: number; qtyTotal: number; pricePerUnit: number; subtotal: number
+    }[]
+  }, [recipe, ingredients, safeQty])
+
+  const [downloading, setDownloading] = useState(false)
+  const handleDownloadPdf = async () => {
+    if (!product) return
+    try {
+      setDownloading(true)
+      const { pdf } = await import('@react-pdf/renderer')
+      const doc = (
+        <CalculationReportPDF
+          productName={product?.name || ''}
+          qty={safeQty}
+          usedMargin={usedMargin}
+          materialCostPerProduct={materialCostPerProduct}
+          additionalCostPerProduct={additionalCostPerProduct}
+          productionCostPerProduct={productionCostPerProduct}
+          sellingPricePerProduct={sellingPricePerProduct}
+          profitPerProduct={profitPerProduct}
+          totalProfit={totalProfit}
+          costs={costs}
+          items={recipeItems}
+        />
+      )
+      const blob = await pdf(doc).toBlob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `sadean-report-${product?.name || 'produk'}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      console.error('Gagal membuat PDF', e)
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -716,6 +888,12 @@ function Calculator() {
       {disabled && (
         <p className="text-xs text-gray-500">Isi produk, resep, jumlah produksi, dan biaya lain (opsional) untuk melihat hasil.</p>
       )}
+
+      <div className="mt-4 flex justify-end">
+        <Button onClick={handleDownloadPdf} disabled={!product || downloading} className="text-sm bg-gray-800 text-white rounded px-4 py-2">
+          {downloading ? 'Menyiapkan PDF…' : 'Download PDF'}
+        </Button>
+      </div>
     </div>
   )
 }
@@ -725,7 +903,15 @@ export default function Page() {
   return (
     <AppProvider>
       <TopNav
-        left={<div className="flex items-center gap-2"><TbCalculator /><span className="text-xl font-serif">Sadean Overflow</span></div>}
+        left={
+          <>
+            <div className="flex items-center gap-2">
+              <TbCalculator />
+              <span className="text-xl font-serif">Sadean Overflow</span>
+            </div>
+            <div className="text-sm text-gray-500 font-serif">Kalkulator perhitungan produk dan modal produksi</div>
+          </>
+        }
       />
       <main className="max-w-5xl mx-auto py-6 space-y-6">
         <Tabs
@@ -764,7 +950,7 @@ export default function Page() {
         )}
 
         {tab === 'perhitungan' && (
-          <Section title="4) Hitung Harga & Laba">
+          <Section title="Hitung Harga & Laba">
             <Calculator />
           </Section>
         )}
