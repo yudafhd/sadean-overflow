@@ -1,5 +1,5 @@
 "use client"
-import React, { createContext, useContext, useMemo } from 'react'
+import React, { createContext, useContext, useMemo, useCallback } from 'react'
 import type { AppState, Product, Ingredient, ProductRequirement } from '@/types'
 import { useLocalStorageState } from '@/hooks/useLocalStorage'
 
@@ -22,45 +22,45 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [ingredients, setIngredients] = useLocalStorageState<Ingredient[]>('so_ingredients', [])
   const [requirements, setRequirements] = useLocalStorageState<ProductRequirement[]>('so_requirements', [])
 
-  const addProduct: AppContextType['addProduct'] = (p) => {
+  const addProduct: AppContextType['addProduct'] = useCallback((p) => {
     setProducts((prev) => [...prev, { ...p, id: genId('prd') }])
-  }
+  }, [setProducts])
 
-  const removeProduct: AppContextType['removeProduct'] = (id) => {
+  const removeProduct: AppContextType['removeProduct'] = useCallback((id) => {
     setProducts((prev) => prev.filter((prd) => prd.id !== id))
     // purge requirements for this product
     setRequirements((prev) => prev.filter((r) => r.productId !== id))
-  }
+  }, [setProducts, setRequirements])
 
-  const addIngredient: AppContextType['addIngredient'] = (i) => {
+  const addIngredient: AppContextType['addIngredient'] = useCallback((i) => {
     setIngredients((prev) => [...prev, { ...i, id: genId('ing') }])
-  }
+  }, [setIngredients])
 
-  const updateIngredient: AppContextType['updateIngredient'] = (id, patch) => {
+  const updateIngredient: AppContextType['updateIngredient'] = useCallback((id, patch) => {
     setIngredients((prev) => prev.map((ing) => (ing.id === id ? { ...ing, ...patch } : ing)))
-  }
+  }, [setIngredients])
 
-  const removeIngredient: AppContextType['removeIngredient'] = (id) => {
+  const removeIngredient: AppContextType['removeIngredient'] = useCallback((id) => {
     setIngredients((prev) => prev.filter((ing) => ing.id !== id))
     // also purge requirements that reference this ingredient
     setRequirements((prev) => prev.filter((r) => r.ingredientId !== id))
-  }
+  }, [setIngredients, setRequirements])
 
-  const upsertRequirementRows: AppContextType['upsertRequirementRows'] = (productId, rows) => {
+  const upsertRequirementRows: AppContextType['upsertRequirementRows'] = useCallback((productId, rows) => {
     setRequirements((prev) => {
       const withoutProduct = prev.filter((r) => r.productId !== productId)
       const withNew = rows.map((r) => ({ productId, ...r }))
       return [...withoutProduct, ...withNew]
     })
-  }
+  }, [setRequirements])
 
-  const removeRequirementRow: AppContextType['removeRequirementRow'] = (productId, ingredientId) => {
+  const removeRequirementRow: AppContextType['removeRequirementRow'] = useCallback((productId, ingredientId) => {
     setRequirements((prev) => prev.filter((r) => !(r.productId === productId && r.ingredientId === ingredientId)))
-  }
+  }, [setRequirements])
 
   const value = useMemo(
     () => ({ products, ingredients, requirements, addProduct, removeProduct, addIngredient, updateIngredient, removeIngredient, upsertRequirementRows, removeRequirementRow }),
-    [products, ingredients, requirements]
+    [products, ingredients, requirements, addProduct, removeProduct, addIngredient, updateIngredient, removeIngredient, upsertRequirementRows, removeRequirementRow]
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

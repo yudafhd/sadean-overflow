@@ -125,24 +125,28 @@ function AddIngredientForm() {
         </div>
         <div>
           <label className="block text-sm mb-1">Satuan</label>
-          <Select value={form.unit} onChange={(e) => setForm((s) => ({ ...s, unit: (e.target as HTMLSelectElement).value as any }))}>
-            <option value="gr">gr</option>
-            <option value="kg">kg</option>
-            <option value="pcs">pcs</option>
-            <option value="liter">liter</option>
-          </Select>
+          <div className="flex">
+            <NumericInput
+              value={totalUnitQty}
+              onChange={setTotalUnitQty}
+              allowDecimals
+              placeholder="contoh: 100"
+              className="rounded-r-none border-r-0"
+            />
+            <Select
+              value={form.unit}
+              onChange={(e) => setForm((s) => ({ ...s, unit: (e.target as HTMLSelectElement).value as any }))}
+              className="rounded-l-none"
+            >
+              <option value="gram">gram</option>
+              <option value="kg">kg</option>
+              <option value="pcs">pcs</option>
+              <option value="liter">liter</option>
+            </Select>
+          </div>
         </div>
         <div>
-          <label className="block text-sm mb-1">Total Satuan</label>
-          <NumericInput
-            value={totalUnitQty}
-            onChange={setTotalUnitQty}
-            allowDecimals
-            placeholder="contoh: 100 (gr, pcs, dll)"
-          />
-        </div>
-        <div>
-          <label className="block text-sm mb-1">Harga Total Satuan</label>
+          <label className="block text-sm mb-1">Harga Satuan</label>
           <NumericInput
             value={totalUnitPrice}
             onChange={setTotalUnitPrice}
@@ -151,10 +155,9 @@ function AddIngredientForm() {
         </div>
         <div>
           <label className="block text-sm mb-1">Harga per Unit (otomatis)</label>
-          <div className="w-full border rounded px-3 py-2 bg-gray-50">
+          <div className="w-full border rounded-2xl px-3 py-2 bg-gray-50">
             {computedPricePerUnit > 0 ? Number(computedPricePerUnit.toFixed(6)).toLocaleString('id-ID') : '—'}
           </div>
-          <p className="text-xs text-gray-500 mt-1">Dihitung dari Total Satuan dan Harga Total Satuan.</p>
         </div>
         <Button type="submit" variant="secondary">Tambah Bahan</Button>
       </form>
@@ -213,7 +216,7 @@ function AddIngredientForm() {
                           value={edit?.unit || 'kg'}
                           onChange={(e) => setEdit((s) => (s ? { ...s, unit: (e.target as HTMLSelectElement).value as any } : s))}
                         >
-                          <option value="gr">gr</option>
+                          <option value="gram">gram</option>
                           <option value="kg">kg</option>
                           <option value="pcs">pcs</option>
                           <option value="liter">liter</option>
@@ -307,23 +310,23 @@ function RecipeEditor() {
             ))}
           </Select>
         </div>
-        <Button onClick={addRow} disabled={!selectedProductId}>Tambah Baris</Button>
-        <Button onClick={save} disabled={!selectedProductId}>Simpan Resep</Button>
+        <Button onClick={addRow} disabled={!selectedProductId}>Tambah</Button>
+        <Button onClick={save} disabled={!selectedProductId}>Simpan</Button>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm border">
           <thead>
             <tr className="bg-gray-50">
-              <th className="p-2 border">Ingredient</th>
-              <th className="p-2 border">Qty (unit)</th>
+              <th className="p-2 border">Bahan</th>
+              <th className="p-2 border">Qty</th>
               <th className="p-2 border">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {localRows.length === 0 && (
               <tr>
-                <td colSpan={3} className="p-3 text-center text-gray-500">Belum ada baris. Pilih produk dan klik "Tambah Baris".</td>
+                <td colSpan={3} className="p-3 text-center text-gray-500">Belum ada baris. Pilih produk dan klik &quot;Tambah Baris&quot;.</td>
               </tr>
             )}
             {localRows.map((row, idx) => (
@@ -428,7 +431,7 @@ function Calculator() {
       <div>
         <div className="flex items-center justify-between mb-2">
           <h4 className="font-medium">Biaya Lain</h4>
-          <button onClick={addCostRow} className="text-sm bg-gray-800 text-white rounded px-3 py-1">Tambah Biaya</button>
+          <Button onClick={addCostRow} className="text-sm bg-gray-800 text-white rounded px-3 py-1">Tambah Biaya</Button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border">
@@ -532,10 +535,7 @@ export default function Page() {
       <TopNav
         left={<div className="flex items-center gap-2"><TbCalculator /><span className="text-xl font-serif">sadean-overflow</span><span className="folderly-oval text-xs">Calculator</span></div>}
       />
-      <main className="max-w-5xl mx-auto p-6 space-y-6">
-        <header>
-          <p className="text-sm text-black/60">Hitung modal, harga, dan laba produk berbasis resep.</p>
-        </header>
+      <main className="max-w-5xl mx-auto py-6 space-y-6">
 
         <Section title="1) Data Produk">
           <CreateProductForm />
@@ -545,7 +545,7 @@ export default function Page() {
           <AddIngredientForm />
         </Section>
 
-        <Section title="3) Resep per Produk">
+        <Section title="3) Produksi">
           <RecipeEditor />
         </Section>
 
