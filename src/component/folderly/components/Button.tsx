@@ -10,9 +10,9 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 export function Button({ variant = 'primary', size = 'md', className, children, ...props }: ButtonProps) {
   const base = 'inline-flex items-center justify-center gap-2 font-medium transition focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed'
   const sizes = {
-    sm: 'h-9 px-3 rounded-[12px] text-sm',
-    md: 'h-10 px-4 rounded-[16px] text-sm',
-    lg: 'h-12 px-5 rounded-[16px] text-base',
+    sm: 'h-9 px-3 rounded-[12px] label-md',
+    md: 'h-10 px-4 rounded-[16px] label-md',
+    lg: 'h-12 px-5 rounded-[16px] body-sm',
   }[size]
 
   const variants = {

@@ -1,0 +1,158 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Inter:wght@100..900&family=Playfair+Display:wght@400..900&family=JetBrains+Mono:wght@100..800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Folderly — Base Palette */
+  --pink: #FADADD;
+  --blue: #CFE9FF;
+  --lavender: #E4D8FF;
+  --butter: #FFF4C4;
+  --mint: #D8F5D2;
+  --slate: #333333;
+  --gray: #E5E7EB;
+  --red: #FAD1D1; /* pastel red */
+  --bg: #fbfbfb;
+
+  /* Folderly — Semantic */
+  --color-primary: var(--blue);
+  --color-secondary: var(--lavender);
+  --color-accent: var(--pink);
+  --color-success: var(--mint);
+  --color-warning: var(--butter);
+  --color-info: var(--blue);
+  --color-danger: #EA4E4E;
+  --color-surface: var(--bg);
+  --color-border: var(--gray);
+  --color-text: var(--slate);
+
+  /* Typography */
+  --font-sans: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Playfair Display', ui-serif, Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* Fluid size scale (mobile → desktop) */
+  --fs-xs: clamp(0.75rem, 0.71rem + 0.19vw, 0.875rem);
+  --fs-sm: clamp(0.875rem, 0.84rem + 0.19vw, 1rem);
+  --fs-md: clamp(1rem, 0.96rem + 0.25vw, 1.125rem);
+  --fs-lg: clamp(1.125rem, 1.06rem + 0.31vw, 1.25rem);
+  --fs-xl: clamp(1.25rem, 1.17rem + 0.37vw, 1.5rem);
+  --fs-2xl: clamp(1.5rem, 1.36rem + 0.56vw, 1.875rem);
+  --fs-3xl: clamp(1.875rem, 1.67rem + 0.87vw, 2.25rem);
+  --fs-4xl: clamp(2.25rem, 2.1rem + 0.87vw, 3rem);
+  --fs-5xl: clamp(3rem, 2.5rem + 1.74vw, 3.75rem);
+
+  /* Radius */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(17,24,39,0.06);
+  --shadow-md: 0 4px 12px rgba(17,24,39,0.08);
+  --shadow-lg: 0 10px 24px rgba(17,24,39,0.10);
+}
+
+[data-theme="dark"] {
+  --bg: #0F1115;
+  --color-text: #EAEAEA;
+  --color-surface: #141820;
+  --color-border: #2A3140;
+  --pink: #F6CAD1;
+  --blue: #BBD9FF;
+  --lavender: #D6C7FF;
+  --butter: #FFECA2;
+  --mint: #C8F0C0;
+}
+
+html, body, #__next {
+  height: 100%;
+}
+
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--fs-md);
+    line-height: 1.65;
+    font-feature-settings: 'cv02','cv03','cv04','cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  h1 { font-size: var(--fs-4xl); }
+  h2 { font-size: var(--fs-3xl); }
+  h3 { font-size: var(--fs-2xl); }
+  h4 { font-size: var(--fs-xl); }
+  h5 { font-size: var(--fs-lg); }
+  h6 { font-size: var(--fs-md); }
+}
+
+.text-display { font-family: 'Cal Sans', 'Inter', system-ui, sans-serif; font-weight: 700; letter-spacing: -0.05em; }
+
+.text-mono { font-family: var(--font-mono); }
+
+.text-balance {
+  text-wrap: balance;
+}
+
+@layer utilities {
+  /* Prose scales */
+  .text-prose { font-size: var(--fs-md); line-height: 1.75; color: var(--color-text); }
+  .text-prose-sm { font-size: var(--fs-sm); line-height: 1.65; color: var(--color-text); }
+  .text-prose-lg { font-size: var(--fs-lg); line-height: 1.85; color: var(--color-text); }
+
+  /* Headings (utility classes) */
+  .heading-xl { font-family: var(--font-serif); font-size: var(--fs-4xl); font-weight: 700; line-height: 1.1; letter-spacing: -0.04em; }
+  .heading-lg { font-family: var(--font-serif); font-size: var(--fs-3xl); font-weight: 600; line-height: 1.15; letter-spacing: -0.03em; }
+  .heading-md { font-family: var(--font-serif); font-size: var(--fs-2xl); font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
+  .heading-sm { font-family: var(--font-sans); font-size: var(--fs-xl); font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; }
+  .heading-xs { font-family: var(--font-sans); font-size: var(--fs-lg); font-weight: 600; line-height: 1.3; }
+
+  /* Body text */
+  .body-lg { font-size: var(--fs-lg); line-height: 1.7; color: var(--color-text); }
+  .body-md { font-size: var(--fs-md); line-height: 1.65; color: var(--color-text); }
+  .body-sm { font-size: var(--fs-sm); line-height: 1.55; color: var(--color-text); }
+  .body-xs { font-size: var(--fs-xs); line-height: 1.45; color: var(--color-text); }
+
+  /* Labels */
+  .label-lg { font-family: var(--font-sans); font-size: var(--fs-sm); font-weight: 600; line-height: 1.2; letter-spacing: 0.01em; }
+  .label-md { font-family: var(--font-sans); font-size: 0.72rem; font-weight: 600; line-height: 1.2; letter-spacing: 0.04em; }
+  .label-sm { font-family: var(--font-sans); font-size: 0.65rem; font-weight: 700; line-height: 1.1; letter-spacing: 0.08em; text-transform: uppercase; color: #5b616e; }
+
+  /* Muted & helpers */
+  .muted { color: color-mix(in oklab, var(--color-text) 60%, white); }
+  .eyebrow { @apply label-sm uppercase tracking-widest; color: #767c89; }
+  .measure { max-width: 70ch; }
+}
+
+/* Folderly — Utility helpers */
+.folderly-surface { background-color: var(--color-surface); }
+.folderly-border { border-color: var(--color-border); }
+.folderly-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); }
+.folderly-oval { border: 1px solid var(--color-border); border-radius: var(--radius-pill); padding: 6px 12px; }
+
+/* Folder Card shape (tab on top-left) */
+.folder-card { position: relative; border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); transition: transform .15s ease, box-shadow .15s ease; }
+.folder-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.folder-card::before { content: ""; position: absolute; top: -6px; left: 14px; width: 44px; height: 14px; border-top-left-radius: 10px; border-top-right-radius: 10px; background: color-mix(in oklab, currentColor 80%, white); }

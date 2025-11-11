@@ -4,7 +4,6 @@ import { useCallback } from 'react'
 import { useEffect, useState } from 'react'
 
 export function useLocalStorageState<T>(key: string, initial: T) {
-  // Initialize from localStorage on first client render (lazy initializer).
   const [value, setValue] = useState<T>(() => {
     if (typeof window === 'undefined') return initial
     try {
@@ -20,9 +19,7 @@ export function useLocalStorageState<T>(key: string, initial: T) {
   useEffect(() => {
     try {
       window.localStorage.setItem(key, JSON.stringify(value))
-    } catch {
-      // ignore quota errors
-    }
+    } catch { }
   }, [key, value])
 
   const set = useCallback((next: T | ((prev: T) => T)) => {

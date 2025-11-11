@@ -2,7 +2,7 @@
 import React from 'react'
 import { cn } from '@/folderly/components/ui'
 
-const baseField = 'w-full text-[var(--color-text)] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-md)] placeholder:text-black/40 focus:outline-none focus:ring-2 focus:ring-[var(--lavender)]'
+const baseField = 'w-full text-[var(--color-text)] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-[var(--radius-md)] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--lavender)] body-sm'
 
 export const TextInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...props }, ref) => <input ref={ref} className={cn(baseField, 'h-10 px-3', className)} {...props} />

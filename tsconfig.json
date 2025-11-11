@@ -24,15 +24,22 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "app/*"
-      ]
-    }
+      "@/*": ["src/*"],
+      "@/app/*": ["src/app/*"],
+      "@/component/*": ["src/component/*"],
+      "@/lib/*": ["src/lib/*"],
+      "@/folderly/components/*": ["src/component/folderly/components/*"],
+      "@/hooks/*": ["src/lib/hooks/*"],
+      "@/state": ["src/lib/state"],
+      "@/types": ["src/lib/types"]
+    },
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "**/*.d.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
