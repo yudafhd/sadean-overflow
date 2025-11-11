@@ -12,6 +12,7 @@ import IngredientListSimple from '@/component/home/IngredientListSimple'
 import Calculator from '@/component/home/Calculator'
 import { useLocalStorageState } from '@/hooks/useLocalStorage'
 import { H2, Small } from '@/folderly/components/Typography'
+import DataImportExport from '@/component/home/DataImportExport'
 
 export default function Page() {
   const [tab, setTab] = useLocalStorageState<string>('so_ui_tab', 'isi-data')
@@ -45,6 +46,9 @@ export default function Page() {
             </Section>
             <Section title="Produksi">
               <RecipeEditor />
+            </Section>
+            <Section title="Impor / Ekspor">
+              <DataImportExport />
             </Section>
           </div>
         )}

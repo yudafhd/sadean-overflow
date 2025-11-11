@@ -8,7 +8,7 @@ export type Product = {
 export type Ingredient = {
   id: string
   name: string
-  unit: 'gram' | 'kg' | 'pcs' | 'liter'
+  unit: 'gram' | 'kg' | 'pcs' | 'liter' | 'ml'
   pricePerUnit: number // price per unit (per gram, per kg, per pcs, per liter)
 }
 

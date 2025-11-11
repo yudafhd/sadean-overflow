@@ -5,10 +5,12 @@ import { useApp } from '@/state'
 import type { AdditionalCost } from '@/types'
 import { Button } from '@/folderly/components/Button'
 import { Select } from '@/folderly/components/Input'
+import SearchableSelect from '@/folderly/components/SearchableSelect'
 import { NumericInput } from '@/folderly/components/NumericInput'
 import { useLocalStorageState } from '@/hooks/useLocalStorage'
 import { H4, P } from '@/folderly/components/Typography'
 import CalculationReportPDF from '@/component/home/CalculationReportPDF'
+import { FiPlus, FiTrash2, FiDownload } from 'react-icons/fi'
 import type { CalculationItem } from '@/component/home/CalculationReportPDF'
 
 export default function Calculator() {
@@ -108,12 +110,12 @@ export default function Calculator() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                 <div className="md:col-span-2">
                     <label className="block label-md mb-2">Pilih Produk</label>
-                    <Select value={productId} onChange={(e) => setProductId((e.target as HTMLSelectElement).value)}>
-                        <option value="">-- pilih --</option>
-                        {products.map((p) => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                    </Select>
+                    <SearchableSelect
+                      value={productId}
+                      onChange={setProductId}
+                      options={[{ value: '', label: '-- pilih --' }, ...products.map((p) => ({ value: p.id, label: p.name }))]}
+                      placeholder="Cari / pilih produk"
+                    />
                 </div>
                 <div>
                     <label className="block label-md mb-2">Jumlah yang mau dibuat</label>
@@ -134,7 +136,7 @@ export default function Calculator() {
             <div>
                 <div className="flex items-center justify-between mb-2">
                     <H4 className="m-0">Biaya Lain</H4>
-                    <Button onClick={addCostRow} className="text-sm bg-gray-800 text-white rounded px-3 py-1">Tambah Biaya</Button>
+                    <Button onClick={addCostRow} className="text-sm bg-gray-800 text-white rounded px-3 py-1"><FiPlus /> Tambah Biaya</Button>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full body-sm border">
@@ -158,7 +160,7 @@ export default function Calculator() {
                                         <NumericInput value={c.amount} onChange={(val) => updateCostRow(idx, { amount: val })} className="h-9 px-2" placeholder="0" />
                                     </td>
                                     <td className="p-2 border text-center">
-                                        <Button variant="dangerOutline" size="sm" onClick={() => deleteCostRow(idx)}>Hapus</Button>
+                                        <Button variant="dangerOutline" size="sm" onClick={() => deleteCostRow(idx)}><FiTrash2 /> Hapus</Button>
                                     </td>
                                 </tr>
                             ))}
@@ -231,7 +233,7 @@ export default function Calculator() {
 
             <div className="mt-4 flex justify-end">
                 <Button onClick={handleDownloadPdf} disabled={!product || downloading} className="text-sm bg-gray-800 text-white rounded px-4 py-2">
-                    {downloading ? 'Menyiapkan PDF…' : 'Download PDF'}
+                    {downloading ? 'Menyiapkan PDF…' : (<><FiDownload /> Download PDF</>)}
                 </Button>
             </div>
         </div>

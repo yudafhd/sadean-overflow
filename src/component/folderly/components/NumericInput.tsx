@@ -35,8 +35,11 @@ export function NumericInput({
       } else {
         setDisplay(Number(value || 0).toLocaleString('id-ID'))
       }
+    } else if (allowEmpty) {
+      // If value is NaN and empty is allowed, clear the field
+      setDisplay('')
     }
-  }, [value, allowDecimals, decimalSeparator])
+  }, [value, allowDecimals, decimalSeparator, allowEmpty])
 
   const parseToNumber = (input: string): number => {
     if (!input) return 0

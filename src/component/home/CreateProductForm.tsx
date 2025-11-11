@@ -1,12 +1,14 @@
 "use client"
 
 import React, { useState } from 'react'
+import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX } from 'react-icons/fi'
 import { useApp } from '@/state'
 import type { Product } from '@/types'
 import { Button } from '@/folderly/components/Button'
 import { TextInput } from '@/folderly/components/Input'
 import { NumericInput } from '@/folderly/components/NumericInput'
 import { useLocalStorageState } from '@/hooks/useLocalStorage'
+import { Badge } from '@/folderly/components/Badge'
 
 export default function CreateProductForm() {
   const { addProduct, updateProduct, removeProduct, products, requirements, ingredients } = useApp()
@@ -36,12 +38,11 @@ export default function CreateProductForm() {
           <label className="block label-md mb-2">Margin Default (%)</label>
           <NumericInput value={form.defaultMarginPercent} onChange={(v) => setForm((s) => ({ ...s, defaultMarginPercent: Number(v) }))} allowDecimals />
         </div>
-        <Button type="submit">Tambah Produk</Button>
+        <Button type="submit"><FiPlus />Tambah Produk</Button>
       </form>
 
       {products.length > 0 && (
         <div className="mt-6">
-          <h4 className="heading-xs mb-4">Daftar Produk</h4>
           <div className="space-y-3">
             {products.map((p) => {
               const recipeLines = requirements.filter((r) => r.productId === p.id)
@@ -49,8 +50,11 @@ export default function CreateProductForm() {
                 <div key={p.id} className="border border-gray-200 rounded-lg p-4">
                   {editingId !== p.id ? (
                     <>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="body-sm">{p.name} — {p.type} — Margin: {p.defaultMarginPercent}%</span>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h4 className="heading-xs">{p.name}</h4>
+                        <Badge>{p.type || '—'}</Badge>
+                        <Badge kind="ongoing">Margin {p.defaultMarginPercent}%</Badge>
+                        <Badge kind="archived">{recipeLines.length} bahan</Badge>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
@@ -60,12 +64,12 @@ export default function CreateProductForm() {
                               setEdit({ name: p.name, type: p.type, defaultMarginPercent: p.defaultMarginPercent })
                             }}
                           >
-                            Edit
+                            <FiEdit2 /> Edit
                           </Button>
-                          <Button variant="dangerOutline" size="sm" onClick={() => removeProduct(p.id)}>Hapus</Button>
+                          <Button variant="dangerOutline" size="sm" onClick={() => removeProduct(p.id)}><FiTrash2 /> Hapus</Button>
                         </div>
                       </div>
-                      <div className="mt-3">
+                      <div className="mt-3 !font-sm">
                         <div className="font-medium mb-2 body-sm">Daftar Resep:</div>
                         {recipeLines.length === 0 ? (
                           <div className="body-sm italic text-gray-500">Belum ada resep.</div>
@@ -116,7 +120,7 @@ export default function CreateProductForm() {
                             setEdit(null)
                           }}
                         >
-                          Simpan
+                          <FiSave /> Simpan
                         </Button>
                         <Button
                           variant="ghost"
@@ -125,7 +129,7 @@ export default function CreateProductForm() {
                             setEdit(null)
                           }}
                         >
-                          Batal
+                          <FiX /> Batal
                         </Button>
                       </div>
                     </div>
@@ -139,4 +143,3 @@ export default function CreateProductForm() {
     </div>
   )
 }
-

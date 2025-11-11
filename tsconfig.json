@@ -33,7 +33,6 @@
       "@/state": ["src/lib/state"],
       "@/types": ["src/lib/types"]
     },
-    "ignoreDeprecations": "6.0"
   },
   "include": [
     "next-env.d.ts",

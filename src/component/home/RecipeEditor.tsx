@@ -1,10 +1,12 @@
 "use client"
 
 import React, { useEffect, useMemo, useState } from 'react'
+import { FiPlus, FiSave, FiTrash2 } from 'react-icons/fi'
 import { useApp } from '@/state'
 import type { ProductRequirement } from '@/types'
 import { Button } from '@/folderly/components/Button'
 import { Select } from '@/folderly/components/Input'
+import SearchableSelect from '@/folderly/components/SearchableSelect'
 import { NumericInput } from '@/folderly/components/NumericInput'
 import { useLocalStorageState } from '@/hooks/useLocalStorage'
 
@@ -83,12 +85,12 @@ export default function RecipeEditor() {
       <div className="flex gap-3 items-end">
         <div className="flex-1">
           <label className="block text-sm mb-1">Pilih Produk</label>
-          <Select value={selectedProductId} onChange={(e) => onSelectProduct((e.target as HTMLSelectElement).value)}>
-            <option value="">-- pilih --</option>
-            {products.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </Select>
+          <SearchableSelect
+            value={selectedProductId}
+            onChange={onSelectProduct}
+            options={[{ value: '', label: '-- pilih --' }, ...products.map((p) => ({ value: p.id, label: p.name }))]}
+            placeholder="Cari / pilih produk"
+          />
         </div>
       </div>
 
@@ -114,36 +116,34 @@ export default function RecipeEditor() {
               )
               const availableIngredients = ingredients.filter((i) => !usedIds.has(i.id) || i.id === row.ingredientId)
               return (
-              <tr key={idx}>
-                <td className="p-2 border">
-                  <Select
-                    value={row.ingredientId}
-                    onChange={(e) => updateRow(idx, { ingredientId: (e.target as HTMLSelectElement).value })}
-                  >
-                    <option value="">-- pilih bahan --</option>
-                    {availableIngredients.map((i) => (
-                      <option key={i.id} value={i.id}>{i.name}</option>
-                    ))}
-                  </Select>
-                </td>
-                <td className="p-2 border text-right">
-                  <NumericInput
-                    value={row.qtyPerProduct}
-                    onChange={(val) => updateRow(idx, { qtyPerProduct: val })}
-                    allowDecimals
-                    allowEmpty
-                    placeholder="0"
-                    className="h-9 px-2 text-right"
-                  />
-                </td>
-                <td className="p-2 border">
-                  {ingredients.find((i) => i.id === row.ingredientId)?.unit || '-'}
-                </td>
-                <td className="p-2 border text-center">
-                  <button onClick={() => deleteRow(idx)} className="text-red-600 hover:underline">Hapus</button>
-                </td>
-              </tr>
-            )})}
+                <tr key={idx}>
+                  <td className="p-2 border">
+                    <SearchableSelect
+                      value={row.ingredientId}
+                      onChange={(v) => updateRow(idx, { ingredientId: v })}
+                      options={[{ value: '', label: '-- pilih bahan --' }, ...availableIngredients.map((i) => ({ value: i.id, label: i.name }))]}
+                      placeholder="Cari / pilih bahan"
+                    />
+                  </td>
+                  <td className="p-2 border text-right">
+                    <NumericInput
+                      value={row.qtyPerProduct}
+                      onChange={(val) => updateRow(idx, { qtyPerProduct: val })}
+                      allowDecimals
+                      allowEmpty
+                      placeholder="0"
+                      className="h-9 px-2 text-right"
+                    />
+                  </td>
+                  <td className="p-2 border">
+                    {ingredients.find((i) => i.id === row.ingredientId)?.unit || '-'}
+                  </td>
+                  <td className="p-2 border text-center">
+                    <Button variant="dangerOutline" size="sm" onClick={() => deleteRow(idx)}><FiTrash2 /> Hapus</Button>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -153,8 +153,8 @@ export default function RecipeEditor() {
       )}
 
       <div className="flex gap-2 justify-end">
-        <Button onClick={save} disabled={!selectedProductId}>Simpan Semua </Button>
-        <Button onClick={addRow} disabled={!selectedProductId}>Tambah Bahan</Button>
+        <Button onClick={addRow} disabled={!selectedProductId}><FiPlus /> Tambah Bahan</Button>
+        <Button onClick={save} disabled={!selectedProductId}><FiSave /> Simpan Semua</Button>
       </div>
     </div>
   )

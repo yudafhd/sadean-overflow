@@ -1,12 +1,15 @@
 "use client"
 
 import React, { useMemo, useState } from 'react'
+import { FiPlus, FiEdit2, FiTrash2, FiSave, FiX } from 'react-icons/fi'
 import { useApp } from '@/state'
 import type { Ingredient } from '@/types'
 import { Button } from '@/folderly/components/Button'
 import { TextInput, Select } from '@/folderly/components/Input'
 import { NumericInput } from '@/folderly/components/NumericInput'
 import { useLocalStorageState } from '@/hooks/useLocalStorage'
+import { H4, Small } from '@/folderly/components/Typography'
+import { ListItem } from '@/folderly/components/ListItem'
 
 export default function AddIngredientForm() {
   const { ingredients, addIngredient, updateIngredient, removeIngredient } = useApp()
@@ -66,6 +69,7 @@ export default function AddIngredientForm() {
               <option value="kg">kg</option>
               <option value="pcs">pcs</option>
               <option value="liter">liter</option>
+              <option value="ml">ml</option>
             </Select>
           </div>
         </div>
@@ -84,23 +88,22 @@ export default function AddIngredientForm() {
             {computedPricePerUnit > 0 ? Number(computedPricePerUnit.toFixed(6)).toLocaleString('id-ID') : '—'}
           </div>
         </div>
-        <Button type="submit" variant="secondary">Tambah Bahan</Button>
+        <Button type="submit" variant="secondary"><FiPlus />Tambah Bahan</Button>
       </form>
 
       {ingredients.length > 0 && (
         <div className="mt-6">
-          <h4 className="heading-xs mb-4">Daftar Bahan</h4>
-          <div className="space-y-3">
+          <div className="mt-3 space-y-2">
             {ingredients.map((i) => {
               const isEditing = editingId === i.id
-              return (
-                <div key={i.id} className="border border-gray-200 rounded-lg p-4">
-                  {!isEditing ? (
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="body-sm">
-                        {i.name} — Unit: {i.unit} — Harga/unit: {i.pricePerUnit.toLocaleString('id-ID')}
-                      </span>
-                      <div className="flex items-center gap-3">
+              if (!isEditing) {
+                return (
+                  <ListItem
+                    key={i.id}
+                    title={i.name}
+                    subtitle={`Unit: ${i.unit} • Harga/unit: ${i.pricePerUnit.toLocaleString('id-ID')}`}
+                    right={
+                      <div className="inline-flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -111,7 +114,7 @@ export default function AddIngredientForm() {
                             setEditTotalUnitPrice(NaN as unknown as number)
                           }}
                         >
-                          Edit
+                          <FiEdit2 /> Edit
                         </Button>
                         <Button
                           variant="dangerOutline"
@@ -124,83 +127,90 @@ export default function AddIngredientForm() {
                             }
                           }}
                         >
-                          Hapus
+                          <FiTrash2 /> Hapus
                         </Button>
                       </div>
+                    }
+                  />
+                )
+              }
+              return (
+                <div key={i.id} className="folderly-card p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                      <label className="block label-md mb-2">Nama Bahan</label>
+                      <TextInput
+                        value={edit?.name || ''}
+                        onChange={(e) => setEdit((s) => (s ? { ...s, name: e.target.value } : s))}
+                      />
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                      <div>
-                        <label className="block label-md mb-2">Nama</label>
-                        <TextInput
-                          value={edit?.name || ''}
-                          onChange={(e) => setEdit((s) => (s ? { ...s, name: e.target.value } : s))}
-                        />
-                      </div>
-                      <div>
-                        <label className="block label-md mb-2">Satuan</label>
-                        <div className="flex">
-                          <NumericInput
-                            value={editTotalUnitQty}
-                            onChange={setEditTotalUnitQty}
-                            allowDecimals
-                            allowEmpty
-                            placeholder="contoh: 100"
-                            className="rounded-r-none border-r-0"
-                          />
-                          <Select
-                            value={edit?.unit || 'kg'}
-                            onChange={(e) => setEdit((s) => (s ? { ...s, unit: (e.target as HTMLSelectElement).value as any } : s))}
-                            className="rounded-l-none"
-                          >
-                            <option value="gram">gram</option>
-                            <option value="kg">kg</option>
-                            <option value="pcs">pcs</option>
-                            <option value="liter">liter</option>
-                          </Select>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block label-md mb-2">Harga Satuan</label>
+                    <div>
+                      <label className="block label-md mb-2">Satuan</label>
+                      <div className="flex">
                         <NumericInput
-                          value={editTotalUnitPrice}
-                          onChange={setEditTotalUnitPrice}
+                          value={editTotalUnitQty}
+                          onChange={setEditTotalUnitQty}
+                          allowDecimals
                           allowEmpty
-                          placeholder="contoh: 10.000"
+                          placeholder="10"
+                          className="rounded-r-none border-r-0"
                         />
-                      </div>
-                      <div>
-                        <label className="block label-md mb-2">Harga per Unit (otomatis)</label>
-                        <div className="w-full border rounded-2xl px-3 py-2 bg-gray-50 body-sm">
-                          {editComputedPricePerUnit > 0
-                            ? Number(editComputedPricePerUnit.toFixed(6)).toLocaleString('id-ID')
-                            : (edit?.pricePerUnit ? edit.pricePerUnit.toLocaleString('id-ID') : '—')}
-                        </div>
-                      </div>
-                      <div className="flex items-end gap-2">
-                        <Button
-                          onClick={() => {
-                            if (!edit) return
-                            const computed = editComputedPricePerUnit > 0 ? editComputedPricePerUnit : Number(edit.pricePerUnit || 0)
-                            updateIngredient(i.id, { name: edit.name, unit: edit.unit, pricePerUnit: computed })
-                            setEditingId(null)
-                            setEdit(null)
-                          }}
+                        <Select
+                          value={edit?.unit || 'kg'}
+                          onChange={(e) => setEdit((s) => (s ? { ...s, unit: (e.target as HTMLSelectElement).value as any } : s))}
+                          className="rounded-l-none"
                         >
-                          Simpan
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingId(null)
-                            setEdit(null)
-                          }}
-                        >
-                          Batal
-                        </Button>
+                          <option value="">pilih satuan</option>
+                          <option value="gram">gram</option>
+                          <option value="kg">kg</option>
+                          <option value="pcs">pcs</option>
+                          <option value="liter">liter</option>
+                          <option value="ml">ml</option>
+                        </Select>
                       </div>
                     </div>
-                  )}
+                    <div>
+                      <label className="block label-md mb-2">Harga Satuan</label>
+                      <NumericInput
+                        value={editTotalUnitPrice}
+                        onChange={setEditTotalUnitPrice}
+                        allowEmpty
+                        placeholder="1.000"
+                      />
+                    </div>
+                    <div>
+                      <label className="block label-md mb-2">Harga per Unit (otomatis)</label>
+                      <div className="w-full border rounded-2xl px-3 py-2 bg-gray-50 body-sm">
+                        {editComputedPricePerUnit > 0
+                          ? Number(editComputedPricePerUnit.toFixed(6)).toLocaleString('id-ID')
+                          : (edit?.pricePerUnit ? edit.pricePerUnit.toLocaleString('id-ID') : '—')}
+                      </div>
+                    </div>
+                    <div className="md:col-span-4 flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          if (!edit) return
+                          const computed = editComputedPricePerUnit > 0 ? editComputedPricePerUnit : Number(edit.pricePerUnit || 0)
+                          updateIngredient(i.id, { name: edit.name, unit: edit.unit, pricePerUnit: computed })
+                          setEditingId(null)
+                          setEdit(null)
+                        }}
+                      >
+                        <FiSave /> Simpan
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditingId(null)
+                          setEdit(null)
+                        }}
+                      >
+                        <FiX /> Batal
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )
             })}
@@ -210,4 +220,3 @@ export default function AddIngredientForm() {
     </div>
   )
 }
-
