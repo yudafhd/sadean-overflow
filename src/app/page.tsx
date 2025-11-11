@@ -15,7 +15,7 @@ import { H2, Small } from '@/folderly/components/Typography'
 import DataImportExport from '@/component/home/DataImportExport'
 
 export default function Page() {
-  const [tab, setTab] = useLocalStorageState<string>('so_ui_tab', 'isi-data')
+  const [tab, setTab] = useLocalStorageState<string>('so_ui_tab', 'data')
   return (
     <AppProvider>
       <TopNav
